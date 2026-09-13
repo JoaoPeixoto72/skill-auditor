@@ -1,18 +1,20 @@
-# skill-auditor v4.1 (hybrid)
+# skill-auditor v4.2 (hybrid)
 
 An Agent Skill that audits other Agent Skills. It combines:
 
 - **Semantic review** — model-aware, with externalized policy, a Trigger Tests suite, and a rich finding model. Inspired by `JoaoPeixoto72/Skill-Reviewer`.
 - **Mechanical linter** — `scripts/audit.sh`, deterministic, ~ms, catches structural regressions without spending tokens.
+- **Claim verification** (§10, `--depth deep`) — runs the cheapest command that could refute what the skill asserts about its repo. This is the half a structural audit cannot reach: a skill can conform to every rule in `POLICY.md` and still say "34 components" over a folder holding 39. Conformance and truth are different audits.
 
 ## Layout
 
 ```
 skill-auditor/
 ├── SKILL.md                       # entry point (thin)
-├── POLICY.md                      # authoritative rules (§1–§9)
+├── POLICY.md                      # authoritative rules (§1–§11)
 ├── scripts/
-│   └── audit.sh                   # mechanical linter (frontmatter, hooks, refs, limits)
+│   └── audit.sh                   # mechanical linter (frontmatter, hooks, refs, limits,
+│                                  # inventory counts, absolute paths, skill pointers)
 └── references/
     ├── model-profiles.md          # opus5 / sol5.6 / gemini3.8 / generic
     ├── finding-model.md           # Type / Severity / Confidence / Verdict

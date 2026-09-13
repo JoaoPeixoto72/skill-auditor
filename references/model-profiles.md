@@ -5,8 +5,20 @@ The same skill text can be correct on one model and defective on another. The au
 ## Resolution rule (recap)
 
 1. Explicit `--model` flag.
-2. `model:` in the frontmatter of the skill under review.
+2. `model:` in the frontmatter of the skill under review, **mapped** by the table below.
 3. `generic`.
+
+**The profile is derived from `model:`, never written into it.** That field is read by the harness, which needs a model id it can resolve; the profile names here are this auditor's vocabulary. The two are not interchangeable, and `model: generic` or `model: opus5` puts a value the harness cannot resolve in a field it acts on (POLICY §1).
+
+| `model:` in frontmatter | Profile applied |
+|---|---|
+| `opus`, `claude-opus-5`, `opus-5` | `opus5` |
+| `sonnet`, `claude-sonnet-5` | `opus5` (same family discipline; self-critique helps) |
+| `haiku`, `claude-haiku-4-5` | `generic` (too small for the profile's assumptions) |
+| `inherit`, absent | `generic` |
+| a profile name (`generic`, `opus5`, …) | `generic`, **and a Major · Defect for the field** |
+
+`--model sol5.6` / `--model gemini3.8` exist for skills authored for other harnesses; no Claude Code `model:` value maps to them.
 
 ## Profile: `opus5` (Claude Opus 5)
 

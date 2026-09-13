@@ -1,13 +1,13 @@
 # Audit: ux-forms
 
-**Verdict:** Needs revision
-**Depth:** standard
+**Verdict:** Reject
+**Depth:** deep
 **Model profile:** sol5.6 (resolved from --model)
 **Reviewed:** design-skills-v3.1/core/ux-forms/SKILL.md
 
 ## Summary
 
-A working, well-structured skill. Two Majors block release: a 5.x-hurt phrase in the workflow, and a missing `disallowed-tools` on a skill that only reads. Three Minors of wording.
+A well-structured skill that does not run: step 4 calls a script that is not in the folder (Blocker, and the reason the verdict is `Reject` rather than `Needs revision` — highest severity wins). Two Majors behind it: a 5.x-hurt phrase in the workflow, and a missing `disallowed-tools` on a skill that only reads. Note what the ordering shows — the Blocker came from the Claims pass, after all eight structural dimensions had passed.
 
 ## Findings
 
@@ -18,6 +18,7 @@ A working, well-structured skill. Two Majors block release: a 5.x-hurt phrase in
 | 3 | Minor | Concern | Observed | Description does not say when NOT to use it | SKILL.md:3 |
 | 4 | Minor | Suggestion | Inferred | Body close to the ceiling (487 lines) | SKILL.md:1-487 |
 | 5 | Nit | Suggestion | Observed | Inconsistent bullets ("- " vs "* ") | SKILL.md:120-140 |
+| 6 | Blocker | Defect | Observed | Step 4 runs a script that does not exist | SKILL.md:88 |
 
 ### Detail
 
@@ -45,6 +46,23 @@ A working, well-structured skill. Two Majors block release: a 5.x-hurt phrase in
 - Evidence: `SKILL.md:120-140` — mixes `- ` and `* `.
 - Fix: normalize to `- `.
 
+**[Blocker · Defect · Observed] Step 4 runs a script that does not exist**
+- Evidence: `SKILL.md:88` — "run `node scripts/contrast.mjs` and paste the ratio"; `node scripts/contrast.mjs --help` exits 127, and `scripts/` holds only `audit.sh`.
+- Impact: the workflow's contrast check never runs. Every structural dimension passed — this was only reachable by running the command (POLICY §10).
+- Fix: ship the script, or drop the step and compute the ratio inline.
+
+## Claims (POLICY §10)
+
+| Claim | Command run | State |
+|---|---|---|
+| "the 12 form patterns in `references/patterns.md`" | `grep -c '^### ' references/patterns.md` → 12 | CONFIRMED |
+| "runs on Node 18+" | `node -v` → v22.4.0 (18+ not disproved, older not tested) | UNVERIFIED |
+| "`scripts/contrast.mjs` prints the WCAG ratio" | `node scripts/contrast.mjs --help` → exit 127, no such file | REFUTED → Finding #6 |
+
+Three claims, one refuted. The refuted one is the finding no amount of reading
+the skill would have produced: the workflow's step 4 runs a script that is not
+there, and every structural dimension passed.
+
 ## Top fixes (ordered)
 
 1. Swap "double-check" for an affirmative statement (§Major #1).
@@ -60,6 +78,6 @@ A working, well-structured skill. Two Majors block release: a 5.x-hurt phrase in
 
 ## Meta
 
-- Linter: pass — 0 mechanical findings.
-- Semantic passes: spec, coverage, triggering, resources, instructions, context, permissions, portability.
-- Skipped: security, model fit (not requested at `--depth standard` — model fit was checked ad hoc for Finding #1).
+- Linter: fail — 1 mechanical finding (#6, the missing script; §4 resolves against the skill folder and the repo root before reporting).
+- Semantic passes: spec, coverage, triggering, resources, instructions, context, permissions, portability, security, model fit, claims.
+- Skipped: none. 3 claims extracted, 1 refuted — Claims table above.
