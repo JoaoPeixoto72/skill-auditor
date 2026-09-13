@@ -103,14 +103,24 @@ check_skill() {
   # §4 is the check most likely to accuse a healthy skill, so it strips before
   # it reads.
   local refs ref
+  # The *whole* path is captured, not the `scripts/...` tail: a skill that names
+  # a sibling skill's script (`.claude/skills/other/scripts/x.ps1`) was reported
+  # as missing because only the tail was looked up. It resolves — one directory
+  # up — and the honest finding there is the Minor below, not a Blocker.
   refs="$(sed -E 's#[A-Za-z0-9_./-]*/[A-Za-z0-9_./*-]*\*[A-Za-z0-9_./*-]*##g' "$skill_md" \
-    | grep -oE '(references|scripts|assets|baselines|templates)/[A-Za-z0-9_./-]+' \
+    | grep -oE '[A-Za-z0-9_./-]*(references|scripts|assets|baselines|templates)/[A-Za-z0-9_./-]+' \
     | sed 's/[.]$//' | sort -u || true)"
   for ref in $refs; do
     if [ -e "$dir/$ref" ]; then
       continue
     elif [ -n "$root" ] && [ -e "$root/$ref" ]; then
-      emit Minor "$skill_md: '$ref' resolves at the repo root, not inside the skill — works here, breaks on a global install (§4/§5)"
+      # A skill naming its own script by the path from the repo root
+      # (`.claude/skills/<self>/scripts/x.py`) is not depending on anything
+      # outside itself — it is the same file, written the long way.
+      case "$root/$ref" in
+        "$dir"/*) continue ;;
+      esac
+      emit Minor "$skill_md: '$ref' lives outside the skill folder — works here, breaks on a global install unless what holds it is installed too (§4/§5)"
     else
       emit Blocker "$skill_md: references '$ref' but it exists neither in $dir/ nor at the repo root"
     fi
@@ -241,11 +251,17 @@ check_skill() {
     fi
   done
 
-  # Scripts executable and with a shebang
+  # Scripts executable and with a shebang — only the ones a POSIX shell can run
+  # directly. A `.ps1` or a `.bat` is Windows-only, is invoked through its own
+  # interpreter, and a shebang in one would be wrong: demanding it there is the
+  # linter inventing a defect.
   if [ -d "$dir/scripts" ]; then
     local s
     for s in "$dir/scripts"/*; do
       [ -f "$s" ] || continue
+      case "$s" in
+        *.ps1|*.psm1|*.bat|*.cmd|*.mjs|*.js|*.ts|*.json|*.md) continue ;;
+      esac
       head -n 1 "$s" | grep -q '^#!' || emit Minor "$s: no shebang"
       [ -x "$s" ] || emit Nit "$s: not executable"
     done

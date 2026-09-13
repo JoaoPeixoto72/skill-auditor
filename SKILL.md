@@ -150,7 +150,7 @@ Fixed format in `references/example-report.md`:
 <!-- Required at --depth deep. Without it the audit is PARTIAL — say so in Meta. -->
 | Claim | Command run | State |
 |-------|-------------|-------|
-| "519 tests (512 + 7)" | `cargo test` | CONFIRMED |
+| "the suite runs 240 tests" | `cargo test` → 240 | CONFIRMED |
 | "34 components" | `ls assets/components/*.tsx \| wc -l` → 39 | REFUTED |
 | "the fastest project to open" | — | UNVERIFIED |
 
