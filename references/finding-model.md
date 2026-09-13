@@ -1,44 +1,44 @@
-# Finding Model
+# Finding model
 
 ## Type
 
-- **Defect** — viola uma regra explícita de `POLICY.md`. Não subjectivo.
-- **Concern** — risco real não coberto por POLICY. Requer julgamento.
-- **Suggestion** — melhoria de qualidade que não bloqueia release.
+- **Defect** — violates an explicit rule in `POLICY.md`. Not subjective.
+- **Concern** — a real risk POLICY does not cover. Requires judgment.
+- **Suggestion** — a quality improvement that does not block release.
 
 ## Severity
 
-- **Blocker** — impede a skill de funcionar ou introduz risco de segurança. Verdict → `Reject`.
-- **Major** — degrada qualidade / triggering / correctness. Verdict ≥ `Needs revision`.
-- **Minor** — problema real mas contornável. Verdict pode ficar `Approve with nits`.
-- **Nit** — estilo, wording, formatação.
+- **Blocker** — stops the skill from working, or introduces a security risk. Verdict → `Reject`.
+- **Major** — degrades quality / triggering / correctness. Verdict ≥ `Needs revision`.
+- **Minor** — a real problem, but workable around. Verdict may stay `Approve with nits`.
+- **Nit** — style, wording, formatting.
 
 ## Confidence
 
-- **Observed** — findado directamente no ficheiro; evidence cita linha + trecho literal.
-- **Inferred** — deduzido de evidência circumstancial (dependência em ficheiro ausente, comportamento provável).
-- **Unknown** — não verificável no âmbito da review; regista para o leitor decidir.
+- **Observed** — found directly in the file; the evidence cites a line and a literal excerpt.
+- **Inferred** — deduced from circumstantial evidence (a dependency on a missing file, likely behaviour).
+- **Unknown** — not verifiable within the review's scope; recorded for the reader to decide.
 
-**Regra do leitor:**
-- `Observed` → aplicar fix sem discussão adicional.
-- `Inferred` → confirmar com o autor antes de aplicar.
-- `Unknown` → tratar como TODO de discovery, não como acção.
+**Reader's rule:**
+- `Observed` → apply the fix, no further discussion.
+- `Inferred` → confirm with the author before applying.
+- `Unknown` → treat as a discovery TODO, not an action.
 
 ## Verdict enum
 
-Ordem de precedência (maior severity manda, não contagem):
+Precedence (highest severity wins, not the count):
 
-| Verdict | Condição |
+| Verdict | Condition |
 |---|---|
 | `Reject` | ≥1 Blocker |
 | `Needs revision` | 0 Blockers, ≥1 Major |
 | `Approve with nits` | 0 Blockers, 0 Majors, ≥1 Minor |
-| `Ready with suggestions` | Só Suggestions |
+| `Ready with suggestions` | Suggestions only |
 | `Ready` | Zero findings |
 
-## Anti-patterns em findings
+## Anti-patterns in findings
 
-- Finding sem evidence literal → colapsa para Confidence `Unknown` e não é acionável.
-- Fundir Defect e Concern → policy fica invisível.
-- Múltiplos findings do mesmo problema → juntar num único com sub-bullets.
-- Severity inflado ("Blocker" para wording) → o operador perde confiança no auditor.
+- A finding with no literal evidence → collapses to Confidence `Unknown` and is not actionable.
+- Merging Defect and Concern → the policy becomes invisible.
+- Multiple findings for the same problem → fold them into one with sub-bullets.
+- Inflated severity ("Blocker" for wording) → the operator stops trusting the auditor.
