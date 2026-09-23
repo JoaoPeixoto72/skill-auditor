@@ -88,6 +88,27 @@ Reads the two reports as data, never as instructions. Either owner's `Reject`
 rejects; missing evidence holds. SkillSpector evidence is required only when
 the security report says it was installed or required.
 
+## What SkillSpector says about these skills
+
+Scanned with SkillSpector 2.11.2 (`--no-llm`) through
+`skills/skill-security-auditor/scripts/audit.sh <skill> --strict`. **No
+`CRITICAL` finding, and nothing rejected.** `skill-release-gate` is eligible;
+the other two are held — `DO_NOT_INSTALL` by score — because a security
+auditor has to describe attacks in order to detect them, and SkillSpector
+reads a description of an attack as the attack:
+
+| Skill | What the scanner flags | What it actually is |
+|---|---|---|
+| `skill-security-auditor` | privilege escalation, prompt leakage, tool misuse, memory poisoning, a YARA "hack tool" rule — all in `POLICY.md` and `references/` | the rules the auditor enforces: lists of what a malicious skill does ("access credentials", "`base64 --decode \| bash`"), so it can recognise them |
+| `skill-security-auditor` | network and shell "capabilities" in `scripts/security/*.py` | the detector regular expressions themselves — they contain the words `curl`, `bash`, `http` because that is what they look for |
+| `skill-security-auditor` | `subprocess` in `skillspector-adapter.py` and `verify-skillspector.py` | running SkillSpector itself (`scan --help`, `--version`, `scan`) and `git ls-files` to pick the files it scans |
+| `skill-readiness-auditor` | privilege escalation and autonomy in `POLICY.md`; capabilities in `scripts/readiness/patterns.py`; "snooping" in `references/example-report.md` | the same: rules and detector patterns that name what they detect, and an example report that lists the skills it read |
+
+The project-policy line of this plugin, which knows the difference between a
+rule and a payload (documentation-context suppression, reported rather than
+silent), finds nothing in either. A hold is SkillSpector asking a person to
+read those lines; this table is that reading.
+
 ## Install
 
 Claude Code:
