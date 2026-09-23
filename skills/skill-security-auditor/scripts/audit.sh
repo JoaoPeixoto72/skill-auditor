@@ -86,33 +86,19 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 SCANNER_REPORT="$TMP_DIR/skillspector.json"
 SCANNER_TRUST="$TMP_DIR/skillspector-trust.json"
 
-# Scanner supply chain: verify the pinned SkillSpector version and ruleset
-# declared in config/skillspector.lock before any scanner evidence is trusted.
-# A failure here never aborts the audit; it downgrades scanner trust, which the
-# project-policy audit records and folds into the verdict.
+# SkillSpector is optional. Its trust record and its report are evidence the
+# audit weighs; neither aborts the run, and the verdict alone sets the exit.
 "$PYTHON_BIN" "$SCRIPT_DIR/verify-skillspector.py" \
   --format json \
   --output "$SCANNER_TRUST" >/dev/null 2>&1
-TRUST_EXIT=$?
 
 "$PYTHON_BIN" "$SCRIPT_DIR/skillspector-adapter.py" \
   "$TARGET" \
   --output "$SCANNER_REPORT"
-ADAPTER_EXIT=$?
 
 "$PYTHON_BIN" "$SCRIPT_DIR/security-audit.py" \
   "$TARGET" \
   --skillspector-report "$SCANNER_REPORT" \
   --scanner-trust "$SCANNER_TRUST" \
   "$@"
-AUDIT_EXIT=$?
-
-if [[ "$AUDIT_EXIT" -ne 0 ]]; then
-  exit "$AUDIT_EXIT"
-fi
-
-if [[ "$ADAPTER_EXIT" -ne 0 || "$TRUST_EXIT" -ne 0 ]]; then
-  exit 1
-fi
-
-exit 0
+exit $?

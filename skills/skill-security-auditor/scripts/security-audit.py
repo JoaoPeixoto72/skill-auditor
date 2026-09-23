@@ -11,6 +11,17 @@ from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlsplit, urlunsplit
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from detectors import (  # noqa: E402
+    AUDIT_DECEPTION_RE,
+    CONCEALMENT_RE,
+    OVERRIDE_RE,
+    TRIGGER_HIJACK_RE,
+    description_of,
+    first_invisible,
+)
+
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -455,8 +466,12 @@ def documentation_context(
     end: int,
     code_spans: list[tuple[int, int, str]],
     pattern_spans: list[tuple[int, int]],
+    honour_negation: bool = True,
 ) -> str | None:
     """Explain why a match is documentation rather than behavior, or return None.
+
+    `honour_negation=False` is for detectors whose payload is itself a
+    negation (concealment from the user): the sentence cannot exonerate itself.
 
     Suppression is reported, never silent: the caller records every suppressed
     match in `documentationMatches`.
@@ -486,10 +501,10 @@ def documentation_context(
 
     lines = clause.splitlines()
 
-    if lines and NEGATED_DECLARATION_RE.match(lines[-1]):
+    if honour_negation and lines and NEGATED_DECLARATION_RE.match(lines[-1]):
         return "negated capability declaration"
 
-    if NEGATION_RE.search(masked):
+    if honour_negation and NEGATION_RE.search(masked):
         return "negated statement in the enclosing clause"
 
     # Structural framing only: the list lead-in, never the matched line.
@@ -499,7 +514,8 @@ def documentation_context(
         return "example introduced by the enclosing list lead-in"
 
     if heading and (
-        NEGATION_RE.search(heading) or EXEMPLIFICATION_RE.search(heading)
+        (honour_negation and NEGATION_RE.search(heading))
+        or EXEMPLIFICATION_RE.search(heading)
     ):
         return f"prohibition or example section: {clean(heading, 80)}"
 
@@ -967,6 +983,7 @@ def scan_skill(
             *,
             confidence: str = "Observed",
             location: str | None = None,
+            honour_negation: bool = True,
         ) -> None:
             """Add a finding, or record the match as documentation context.
 
@@ -987,6 +1004,7 @@ def scan_skill(
                 match.end(),
                 code_spans,
                 pattern_spans,
+                honour_negation,
             )
 
             if reason is not None:
@@ -1021,24 +1039,19 @@ def scan_skill(
                     url_usage(path, text, match.start(), code_spans)
                 )
 
-        for character in (
-            "\u200b", "\u200c", "\u200d", "\u2060",
-            "\u202a", "\u202b", "\u202c", "\u202d",
-            "\u202e", "\u2066", "\u2067", "\u2068",
-            "\u2069",
-        ):
-            if character in text:
-                add_finding(
-                    findings,
-                    "Blocker",
-                    "Invisible or bidirectional Unicode detected",
-                    line_location(Path(relative), text, character),
-                    f"Unicode U+{ord(character):04X}",
-                    "Hidden or reordered instructions may evade review.",
-                    "Remove the character and review surrounding content.",
-                    "§9",
-                )
-                break
+        invisible = first_invisible(text)
+        if invisible is not None:
+            offset, point = invisible
+            add_finding(
+                findings,
+                "Blocker",
+                "Invisible or bidirectional Unicode detected",
+                f"{relative}:{line_index_at(text, offset) + 1}",
+                f"Unicode U+{point:04X}",
+                "Hidden or reordered instructions may evade review.",
+                "Remove the character and review surrounding content.",
+                "§9",
+            )
 
         record(
             INJECTION_RE.search(text),
@@ -1048,6 +1061,50 @@ def scan_skill(
             "Remove the directive and investigate the source.",
             "§8",
         )
+
+        record(
+            OVERRIDE_RE.search(text),
+            "Blocker",
+            "Instruction-override directive detected",
+            "The target tells the agent to discard its instructions, in any language.",
+            "Remove the directive and investigate the source.",
+            "§8",
+        )
+
+        record(
+            CONCEALMENT_RE.search(text),
+            "Blocker",
+            "Instruction to conceal behaviour from the user",
+            "The agent is told to act without the user's knowledge.",
+            "Remove the directive; a skill never hides a step from its user.",
+            "§8",
+            honour_negation=False,
+        )
+
+        record(
+            AUDIT_DECEPTION_RE.search(text),
+            "Blocker",
+            "Instruction to deceive an auditor",
+            "The target scripts its own answer to review, which is deceptive by design.",
+            "Reject the skill and investigate its source.",
+            "§8",
+            honour_negation=False,
+        )
+
+        if path.name == "SKILL.md":
+            described = description_of(text)
+            hijack = TRIGGER_HIJACK_RE.search(described[0]) if described else None
+            if hijack:
+                add_finding(
+                    findings,
+                    "Major",
+                    "Description claims every request",
+                    line_location(Path(relative), text, hijack.group(0)),
+                    hijack.group(0),
+                    "Routing would load the skill for unrelated work, widening its reach.",
+                    "Describe the specific tasks and moments the skill is for.",
+                    "§8",
+                )
 
         record(
             OBFUSCATION_RE.search(text),
@@ -1366,54 +1423,57 @@ def scanner_material_severity(finding: dict[str, Any]) -> str:
     return value
 
 
+def analysis_lines(scanner: dict[str, Any]) -> list[str]:
+    """Which independent evidence lines actually ran."""
+    lines = ["project-policy"]
+    if scanner.get("completeness") not in (None, "UNAVAILABLE", "FAILED"):
+        lines.append("skillspector")
+    return lines
+
+
 def decide_verdict(
     project_results: list[dict[str, Any]],
     scanner: dict[str, Any],
     strict: bool,
     scanner_trust: dict[str, Any] | None = None,
+    require_scanner: bool = False,
 ) -> str:
     project_findings = [
         finding
         for result in project_results
         for finding in result["findings"]
     ]
-
-    # A scanner that contradicts its own pin cannot supply trustworthy
-    # evidence. Never approve on top of it.
-    if scanner_trust and scanner_trust.get("trust") == "FAILED":
-        return "Hold"
-
-    if any(
-        finding["severity"] == "Blocker"
-        for finding in project_findings
-    ):
-        return "Reject"
-
-    scanner_findings = scanner.get("findings", [])
     external_severities = {
         scanner_material_severity(item)
-        for item in scanner_findings
+        for item in scanner.get("findings", [])
         if isinstance(item, dict)
     }
 
-    if "CRITICAL" in external_severities:
+    # Evidence of harm rejects whatever the state of the other line: a scanner
+    # that cannot be trusted never makes a malicious finding less true.
+    if any(finding["severity"] == "Blocker" for finding in project_findings):
         return "Reject"
 
+    if "CRITICAL" in external_severities or scanner.get("recommendation") == "DO_NOT_INSTALL":
+        return "Reject"
+
+    if scanner_trust and scanner_trust.get("trust") == "FAILED":
+        return "Hold"
+
+    # SkillSpector is optional. Absent, the project-policy line decides alone
+    # and the report says so; present, its evidence must be complete.
     completeness = scanner.get("completeness", "UNAVAILABLE")
 
-    if strict and completeness != "COMPLETE":
+    if completeness != "UNAVAILABLE" and completeness != "COMPLETE":
         return "Hold"
 
-    if any(
-        finding["severity"] == "Major"
-        for finding in project_findings
-    ):
+    if require_scanner and completeness != "COMPLETE":
         return "Hold"
 
-    if external_severities & {"HIGH"}:
+    if any(finding["severity"] == "Major" for finding in project_findings):
         return "Hold"
 
-    if external_severities & {"MEDIUM", "LOW"}:
+    if external_severities & {"HIGH", "MEDIUM", "LOW"}:
         return "Hold"
 
     if not strict:
@@ -1491,6 +1551,7 @@ def print_markdown(payload: dict[str, Any]) -> None:
         f"**Scanner trust:** "
         f"{payload['scannerTrust'].get('trust')}  "
     )
+    print(f"**Evidence lines:** {', '.join(payload['analysisLines'])}  ")
     print()
 
     if payload["mode"] == "semantic":
@@ -1615,6 +1676,11 @@ def main() -> int:
         help="Path to the scanner-trust record from verify-skillspector.py",
     )
     parser.add_argument("--runtime-attestation")
+    parser.add_argument(
+        "--require-scanner",
+        action="store_true",
+        help="Hold unless SkillSpector ran completely (two evidence lines).",
+    )
     args = parser.parse_args()
 
     target_value = args.target
@@ -1662,6 +1728,7 @@ def main() -> int:
         scanner,
         args.strict,
         scanner_trust,
+        args.require_scanner,
     )
 
     payload = {
@@ -1672,6 +1739,8 @@ def main() -> int:
         "mode": args.mode,
         "securityVerdict": verdict,
         "enrolmentReady": verdict == "Eligible for enrolment",
+        "scannerRequired": args.require_scanner,
+        "analysisLines": analysis_lines(scanner),
         "skillspector": scanner,
         "scannerTrust": scanner_trust,
         "results": results,

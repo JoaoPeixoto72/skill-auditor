@@ -2,8 +2,8 @@
 
 **Readiness verdict:** Needs revision
 **Depth:** deep
-**Model profile:** sol5.6
-**Profile resolved from:** `--model`
+**Model profile:** claude
+**Profile resolved from:** `host: Claude Code`
 **Reviewed:** `.agents/skills/example-skill/SKILL.md`
 **Security status:** Handoff required
 **Release status:** Needs revision

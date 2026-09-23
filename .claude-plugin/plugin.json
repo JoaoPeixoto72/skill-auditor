@@ -1,7 +1,7 @@
 {
   "name": "skill-auditor",
-  "version": "5.0.0",
-  "description": "Multi-skill audit suite and Runtime Integrity Gate for Agent Skills: instruction readiness review, strict security scanning, release-decision gating, and tamper-evident runtime protection.",
+  "version": "5.1.0",
+  "description": "Audit suite for Agent Skills: readiness (instruction quality, triggers, fit for current Claude models), security (injection in any language, concealment, exfiltration, supply chain; NVIDIA SkillSpector when installed) and a release gate.",
   "author": {
     "name": "JoaoPeixoto72"
   },
@@ -11,8 +11,8 @@
     "security",
     "readiness",
     "release-gate",
-    "runtime-integrity",
     "claude-code",
-    "antigravity"
+    "antigravity",
+    "skillspector"
   ]
 }

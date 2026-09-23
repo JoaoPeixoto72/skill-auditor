@@ -1,14 +1,5 @@
 {
   "scanner": "skillspector",
-  "pinnedVersion": "1.2.0",
-  "rulesetVersion": "2026.03.1",
-  "expectedHash": "c2b64d1f059bc4be6b7b25b68233f211516e87d159a4ef33e6f987f2e1ffb157",
-  "allowedSigners": [
-    "security-tooling@canonical.org",
-    "sec-ops@production-ready.internal"
-  ],
-  "supportedEngines": [
-    "skillspector",
-    "skillspector-cli"
-  ]
+  "minimumVersion": "2.0.0",
+  "source": "git+https://github.com/NVIDIA/skillspector.git"
 }

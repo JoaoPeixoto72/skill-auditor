@@ -1,7 +1,7 @@
 ---
 name: skill-readiness-auditor
 description: "Audit Agent Skills for instruction quality, trigger discrimination, model fit, workflow coverage, structural correctness, portability, and verifiable functional claims before commit or release. Do not use for malware detection, supply-chain security, external-resource trust, or runtime enforcement; use skill-security-auditor for those concerns."
-argument-hint: "<skill-path-or-repo> [--target skill|repo] [--depth quick|standard|deep] [--model generic|sol5.6|gemini3.8|opus5] [--format markdown|json]"
+argument-hint: "<skill-path-or-repo> [--target skill|repo] [--depth quick|standard|deep] [--model generic|claude] [--format markdown|json]"
 version: 1.0.0
 evidence-schema: "1.0.x"
 model: opus
@@ -10,7 +10,7 @@ allowed-tools:
   - Read
   - Glob
   - Grep
-  - Bash(bash scripts/audit.sh:*)
+  - Bash(bash ${CLAUDE_SKILL_DIR}/scripts/audit.sh:*)
   - Bash(find:*)
   - Bash(wc:*)
   - Bash(test:*)
@@ -142,15 +142,14 @@ Semantic review is limited to five skills per response. Split larger repositorie
 
 ### 1. Load the audit contract
 
-Read:
+`POLICY.md` is authoritative for readiness findings; read the section a
+finding cites when you classify it. Load the rest only at the step that uses
+it:
 
-1. `POLICY.md`;
-2. `references/finding-model.md`;
-3. `references/model-profiles.md`;
-4. `references/example-report.md`;
-5. `references/trigger-tests.md`.
-
-Treat `POLICY.md` as authoritative for readiness findings.
+- `references/finding-model.md` — step 13, composing findings;
+- `references/model-profiles.md` — step 10, model fit;
+- `references/trigger-tests.md` — step 4, only when proposing a description;
+- `references/example-report.md` — step 15, the report.
 
 ### 2. Resolve targets and profile
 
@@ -167,8 +166,12 @@ For each target:
 Run:
 
 ```text
-bash scripts/audit.sh <target> [--depth quick|standard|deep] [--format markdown|json]
+bash ${CLAUDE_SKILL_DIR}/scripts/audit.sh <target> [--depth quick|standard|deep] [--format markdown|json]
 ```
+
+`${CLAUDE_SKILL_DIR}` is the directory holding this `SKILL.md` (Claude Code
+substitutes it; on another host use that directory). Never a path relative to
+the working directory: an audited repository may ship its own `scripts/audit.sh`.
 
 Always use the wrapper. It resolves a Python interpreter that actually executes
 — `command -v python3` succeeds against the Windows App Execution Alias, which

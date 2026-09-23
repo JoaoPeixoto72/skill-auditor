@@ -8,9 +8,7 @@ model: opus
 effort: medium
 allowed-tools:
   - Read
-  - Bash(bash scripts/gate.sh:*)
-  - Bash(python3 scripts/release-gate.py:*)
-  - Bash(python scripts/release-gate.py:*)
+  - Bash(bash ${CLAUDE_SKILL_DIR}/scripts/gate.sh:*)
 disallowed-tools:
   - Edit
   - Write
@@ -164,15 +162,20 @@ Also requires:
 Run:
 
 ```text
-bash scripts/gate.sh \
+bash ${CLAUDE_SKILL_DIR}/scripts/gate.sh \
   --readiness-report <path> \
   --security-report <path> \
   --action <action>
 ```
 
 The wrapper resolves a Python interpreter that actually executes and forces
-UTF-8 output. Call `scripts/release-gate.py` directly only when a working
-interpreter is already known.
+UTF-8 output. `${CLAUDE_SKILL_DIR}` is the directory holding this `SKILL.md` (Claude Code
+substitutes it; on another host use that directory). Never a path relative to
+the working directory: an audited repository may ship its own `scripts/audit.sh`.
+
+SkillSpector evidence is required only when the security report says it was
+installed or required (`scannerRequired`); a report decided on the
+project-policy line alone is complete evidence for this gate.
 
 Exit codes: `0` for `Eligible`, `1` for any other decision, `2` when the gate
 could not run.

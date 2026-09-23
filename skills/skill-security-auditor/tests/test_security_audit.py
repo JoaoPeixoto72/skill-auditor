@@ -69,6 +69,7 @@ class SecurityAuditTests(unittest.TestCase):
         self,
         strict: bool = True,
         trust: bool = False,
+        extra: tuple[str, ...] = (),
     ) -> tuple[subprocess.CompletedProcess[str], dict]:
         command = [
             sys.executable,
@@ -83,6 +84,7 @@ class SecurityAuditTests(unittest.TestCase):
             command.append("--strict")
         if trust:
             command.extend(["--scanner-trust", str(self.trust)])
+        command.extend(extra)
 
         process = subprocess.run(
             command,
@@ -379,6 +381,89 @@ class SecurityAuditTests(unittest.TestCase):
         process, payload = self.run_audit(trust=True)
         self.assertEqual(payload["securityVerdict"], "Eligible for enrolment")
         self.assertEqual(process.returncode, 0)
+
+    def test_failed_trust_never_masks_a_blocker(self) -> None:
+        self.trust.write_text(json.dumps({"trust": "FAILED", "errors": []}), encoding="utf-8")
+        self.append(fixture("injection.snippet"))
+        _, payload = self.run_audit(trust=True)
+        self.assertEqual(payload["securityVerdict"], "Reject")
+
+    def test_scanner_do_not_install_rejects(self) -> None:
+        self.scanner.write_text(json.dumps({
+            "completeness": "COMPLETE", "recommendation": "DO_NOT_INSTALL", "findings": [],
+        }), encoding="utf-8")
+        _, payload = self.run_audit()
+        self.assertEqual(payload["securityVerdict"], "Reject")
+
+    # SkillSpector is optional
+
+    def unavailable_scanner(self) -> None:
+        self.scanner.write_text(json.dumps({
+            "status": "UNAVAILABLE", "completeness": "UNAVAILABLE", "findings": [],
+        }), encoding="utf-8")
+
+    def test_missing_scanner_still_decides(self) -> None:
+        self.unavailable_scanner()
+        process, payload = self.run_audit()
+        self.assertEqual(payload["securityVerdict"], "Eligible for enrolment")
+        self.assertEqual(payload["analysisLines"], ["project-policy"])
+        self.assertEqual(process.returncode, 0)
+
+    def test_require_scanner_holds_without_it(self) -> None:
+        self.unavailable_scanner()
+        _, payload = self.run_audit(extra=("--require-scanner",))
+        self.assertEqual(payload["securityVerdict"], "Hold")
+
+    # Beyond English keywords: the gap SkillSpector names in its own README
+
+    def append(self, text: str) -> None:
+        with (self.skill / "SKILL.md").open("a", encoding="utf-8") as file:
+            file.write(text)
+
+    def titles(self, payload: dict) -> set[str]:
+        return {finding["title"] for finding in self.findings(payload)}
+
+    def test_portuguese_override_is_rejected_without_scanner(self) -> None:
+        self.unavailable_scanner()
+        self.append(fixture("override-pt.snippet"))
+        _, payload = self.run_audit()
+        self.assertEqual(payload["securityVerdict"], "Reject")
+        self.assertIn("Instruction-override directive detected", self.titles(payload))
+
+    def test_concealment_is_not_exonerated_by_its_negation(self) -> None:
+        for name in ("concealment-en.snippet", "concealment-pt.snippet"):
+            with self.subTest(name):
+                self.setUp()
+                self.append(fixture(name))
+                _, payload = self.run_audit()
+                self.assertIn("Instruction to conceal behaviour from the user", self.titles(payload))
+                self.assertEqual(payload["securityVerdict"], "Reject")
+
+    def test_audit_deception_is_rejected(self) -> None:
+        self.append(fixture("audit-deception-pt.snippet"))
+        _, payload = self.run_audit()
+        self.assertIn("Instruction to deceive an auditor", self.titles(payload))
+
+    def test_ux_defect_prose_is_not_concealment(self) -> None:
+        self.append(fixture("ux-defect.md.snippet"))
+        _, payload = self.run_audit()
+        self.assertEqual(payload["securityVerdict"], "Eligible for enrolment")
+
+    def test_unicode_tag_characters_are_detected(self) -> None:
+        hidden = "".join(chr(0xE0000 + ord(c)) for c in "hidden")
+        self.append(f"Notes.{hidden}\n")
+        _, payload = self.run_audit()
+        self.assertIn("Invisible or bidirectional Unicode detected", self.titles(payload))
+
+    def test_description_claiming_every_request_holds(self) -> None:
+        text = (self.skill / "SKILL.md").read_text(encoding="utf-8")
+        (self.skill / "SKILL.md").write_text(
+            text.replace("Process local files.", "Process local files for every request."),
+            encoding="utf-8",
+        )
+        _, payload = self.run_audit()
+        self.assertIn("Description claims every request", self.titles(payload))
+        self.assertEqual(payload["securityVerdict"], "Hold")
 
     # Persistence
 

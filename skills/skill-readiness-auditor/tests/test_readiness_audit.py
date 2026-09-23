@@ -633,32 +633,87 @@ class ReadinessAuditTests(unittest.TestCase):
             self.finding_titles(result),
         )
 
-    def test_sol_profile_reports_unbounded_verification_phrase(self) -> None:
+    def test_claude_profile_flags_over_verification(self) -> None:
         skill = self.create_skill(
             "model-fit",
             valid_skill(
                 "model-fit",
-                body=(
-                    "\n## Workflow\n\n"
-                    "Before returning, double-check everything.\n"
-                ),
+                body="\n## Workflow\n\nBefore returning, double-check everything.\n",
             ),
         )
-
-        process = self.run_audit(
-            skill,
-            "--model",
-            "sol5.6",
-        )
-        result = self.parse_result(process)
-
-        self.assertEqual(process.returncode, 1)
-        self.assertEqual(result["model_profile"], "sol5.6")
+        result = self.parse_result(self.run_audit(skill, "--model", "claude"))
         self.assertEqual(result["profile_source"], "--model")
-        self.assertIn(
-            "Instruction conflicts with the sol5.6 profile",
-            self.finding_titles(result),
+        fits = [f for f in result["findings"] if f["title"] == "Instruction conflicts with the claude profile"]
+        self.assertEqual([f["severity"] for f in fits], ["Minor"])
+
+    def test_claude_host_is_detected_from_the_path(self) -> None:
+        content = valid_skill("hosted").replace("model: inherit\n", "")
+        skill = self.create_skill("hosted", content, parent=self.root / ".claude" / "skills")
+        result = self.parse_result(self.run_audit(skill))
+        self.assertEqual((result["model_profile"], result["profile_source"]), ("claude", "host: Claude Code"))
+
+    def test_negated_read_only_is_not_a_claim(self) -> None:
+        skill = self.create_skill(
+            "fixer",
+            valid_skill("fixer", allowed_tools="[Read, Edit]",
+                        body="\nThis skill is not read-only: it edits what it finds.\n"),
         )
+        titles = self.finding_titles(self.parse_result(self.run_audit(skill)))
+        self.assertFalse([t for t in titles if "read-only" in t.lower()], titles)
+
+    def test_portuguese_description_is_understood(self) -> None:
+        skill = self.create_skill(
+            "rever",
+            valid_skill("rever", description=(
+                "Rever uma mudança depois de mexer no código. Não usar para auditorias da app inteira."
+            )),
+        )
+        titles = self.finding_titles(self.parse_result(self.run_audit(skill)))
+        self.assertNotIn("Description has no clear activation condition", titles)
+        self.assertNotIn("Description does not begin with a clear action verb", titles)
+
+    def test_sibling_skill_reference_resolves(self) -> None:
+        plugin = self.root / "plugin" / "skills"
+        tool = plugin / "owner" / "scripts" / "tool.py"
+        tool.parent.mkdir(parents=True)
+        tool.write_text("print('ok')\n", encoding="utf-8")
+        skill = self.create_skill(
+            "user",
+            valid_skill("user", body="\nRun `../owner/scripts/tool.py` on the diff.\n"),
+            parent=plugin,
+        )
+        result = self.parse_result(self.run_audit(skill))
+        self.assertEqual(result["unresolved_resources"], [])
+        self.assertIn("../owner/scripts/tool.py", result["discovered_resources"])
+
+    def test_single_and_repository_mode_agree(self) -> None:
+        repository = self.root / "project"
+        (repository / ".git").mkdir(parents=True)
+        (repository / "scripts").mkdir()
+        (repository / "scripts" / "check.sh").write_text("#!/bin/sh\n", encoding="utf-8")
+        skills = repository / ".claude" / "skills"
+        skill = self.create_skill(
+            "adapter",
+            valid_skill("adapter", body="\nRun `scripts/check.sh` before closing.\n"),
+            parent=skills,
+        )
+        alone = self.finding_titles(self.parse_result(self.run_audit(skill)))
+        together = self.finding_titles(self.parse_result(self.run_audit(skills, "--target", "repo")))
+        self.assertEqual(sorted(alone), sorted(together))
+        self.assertNotIn("Referenced local resource is missing", alone)
+        self.assertNotIn("Resource resolves only from the repository root", alone)
+
+    def test_reserved_word_in_name_blocks(self) -> None:
+        skill = self.create_skill("claude-helper", valid_skill("claude-helper"))
+        titles = self.finding_titles(self.parse_result(self.run_audit(skill)))
+        self.assertIn("Skill name uses a reserved word", titles)
+
+    def test_first_person_description_is_flagged(self) -> None:
+        skill = self.create_skill("helper", valid_skill("helper", description=(
+            "I can audit skills before release. Do not use for application code."
+        )))
+        titles = self.finding_titles(self.parse_result(self.run_audit(skill)))
+        self.assertIn("Description is not written in the third person", titles)
 
     def test_generic_profile_does_not_apply_profile_specific_phrase_rule(
         self,

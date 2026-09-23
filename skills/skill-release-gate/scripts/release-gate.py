@@ -90,6 +90,7 @@ def extract_security(report: dict[str, Any]) -> dict[str, Any]:
         "verdict": report.get("securityVerdict"),
         "strict": report.get("strict", False),
         "completeness": scanner.get("completeness"),
+        "scannerRequired": report.get("scannerRequired", False),
         "requiresRuntimeGate": result.get(
             "requiresRuntimeGate",
             False,
@@ -176,7 +177,13 @@ def decide(
     ):
         decision = "Hold"
 
-    if security["completeness"] != "COMPLETE":
+    # SkillSpector is optional: absent and not required, the security report
+    # decided on its project-policy line alone. Present or required, its
+    # evidence must be complete.
+    scanner_absent = security["completeness"] == "UNAVAILABLE"
+    if security["completeness"] != "COMPLETE" and (
+        security["scannerRequired"] or not scanner_absent
+    ):
         if decision != "Reject":
             decision = "Hold"
         missing.append("complete SkillSpector evidence")

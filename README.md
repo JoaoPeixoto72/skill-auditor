@@ -1,164 +1,109 @@
-# skill-auditor v5.0
+# skill-auditor
 
 [![CI](https://github.com/JoaoPeixoto72/skill-auditor/actions/workflows/test.yml/badge.svg)](https://github.com/JoaoPeixoto72/skill-auditor/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Antigravity%20%7C%20Claude%20Code%20%7C%20Codex%20CLI-orange.svg)](#installation)
 
-Enterprise-grade audit suite, release gate, and runtime integrity governor for Agent Skills.
-
----
-
-## Overview
-
-`skill-auditor` guarantees that Agent Skills are well-written, structurally valid, model-compatible, secure against prompt injection and data exfiltration, and tamper-evident during execution.
-
-It enforces the fundamental architectural principle: **One concern, one owner, independent binary evidence**.
-
-Instead of a monolithic reviewer trying to assess syntax and malware simultaneously, `skill-auditor` separates the problem into three decoupled skill owners plus an active runtime integrity gate:
+Audit and release gate for Agent Skills: is a skill well written, does it talk
+to current models the way their vendor says works, and is it safe to install.
+Works with NVIDIA SkillSpector installed, and without it.
 
 ```
-skill-auditor/
-├── skills/
-│   ├── skill-readiness-auditor/     # Owner 1: Instruction quality, triggers & structure
-│   ├── skill-security-auditor/      # Owner 2: Threat defense, anti-injection & URL tiers
-│   └── skill-release-gate/          # Decision: Aggregates Owner 1 + Owner 2 into release verdict
-└── runtime/                         # Runtime Gate: Bundle hashing, Trust Registry & network governor
+skills/
+├── skill-readiness-auditor/   # instruction quality, triggers, format rules, model fit
+├── skill-security-auditor/    # injection, concealment, exfiltration, supply chain, URL tiers
+└── skill-release-gate/        # combines both reports into one decision
 ```
 
----
+One concern per owner, and each verdict comes from its own evidence.
 
-## Components
+## skill-readiness-auditor
 
-### 1. `skill-readiness-auditor`
-**Answers:** *Is the skill clearly written, structurally complete, properly triggered, portable, and suited for the target model?*
-- Evaluates YAML frontmatter, allowed/disallowed tools, and argument hints.
-- Validates **Trigger Tests** (requires positive activation prompts and negative near-misses).
-- Verifies model profiles (`opus5`, `sol5.6`, `gemini3.8`, `generic`).
-- Validates schema compliance (`readiness-report.schema.json`).
-- Deterministic linter: `scripts/readiness-audit.py` (read-only, fast, zero network).
+*Is the skill clearly written, correctly triggered, and ready to ship?*
 
-### 2. `skill-security-auditor`
-**Answers:** *Is the skill safe to install, enable, sign, or enrol in a production environment?*
-- Evaluates prompt injection risks, supply-chain vulnerabilities, and dangerous permissions.
-- Enforces strict **External Resource Tiers**:
-  - **Tier 0**: Documentation / references (blocked from programmatic runtime fetch).
-  - **Tier 1**: Immutable pinned assets (SHA-256 integrity hash required).
-  - **Tier 2**: Dynamic schema-validated data feeds (strict envelope and schema).
-  - **Tier 3**: Signed executable scripts / updates (Ed25519 cryptographic signatures).
-- Optional static scanner integration (e.g. NVIDIA SkillSpector).
-- Produces SARIF and JSON security evidence (`security-report.schema.json`).
+- Frontmatter and the Agent Skills format: name ≤ 64 characters without
+  `anthropic`/`claude`, description ≤ 1024 characters, third person, no XML
+  tags; allowed-tools coherent with the workflow.
+- Triggering: what the skill does, when to use it, when not — in English,
+  Portuguese or Spanish.
+- Local resources resolve, including a sibling skill's (`../other/scripts/x`)
+  and `${CLAUDE_SKILL_DIR}/…`; references one level deep; long references
+  with a contents list; no dated instructions.
+- **Model fit** for current Claude models, from Anthropic's published
+  prompting pages (`references/model-profiles.md`): aggressive `CRITICAL`/`MUST`
+  emphasis and "if in doubt, use X" that now over-trigger; "double-check"
+  instructions that cause over-verification on Opus 5; "only report
+  high-severity" filters that Sonnet 5 and Opus 5 follow literally. The
+  profile is picked from `model:` or from the host (`.claude/`).
+- Functional claims checked against the files at `--depth deep`.
 
-### 3. `skill-release-gate`
-**Answers:** *Should this skill be installed, signed, enrolled, or published?*
-- Combines the independent JSON reports from `skill-readiness-auditor` and `skill-security-auditor`.
-- Applies declarative binary decision logic: a failure in either owner results in a blocked release.
-- Unlinkable from target directives: input reports are treated strictly as data, never executable instructions.
+## skill-security-auditor
 
-### 4. `runtime/` — Runtime Integrity Gate v2
-**Guarantees:** *Runtime tamper-resistance and outbound network governance.*
-- **Deterministic Bundle Hashing**: Calculates a canonical SHA-256 fingerprint of the skill bundle.
-- **Drift Detection**: Any post-enrollment file addition, modification, or symlink manipulation immediately triggers quarantine.
-- **Trust Registry**: Atomic state management for enrolled, quarantined, and verified skills (`trust-registry.mjs`).
-- **Network Governor**: Intercepts outbound HTTP/HTTPS requests at runtime (`host-interceptor.mjs`), validating against declared external resource tiers, enforcing payload size limits, blocking loopback/private IPs, and preventing rug-pull attacks.
+*Is the skill safe to install, keep enabled, or enrol?*
 
----
+Two evidence lines:
 
-## Installation
+- **NVIDIA SkillSpector**, when installed (`uv tool install
+  git+https://github.com/NVIDIA/skillspector.git`, version ≥ the one in
+  `config/skillspector.lock`). Its `CRITICAL` findings and `DO_NOT_INSTALL`
+  reject; incomplete evidence from it holds.
+- **Project policy**, always: external-resource tiers and declarations,
+  obfuscated execution, persistence, sensitive data next to network calls —
+  and what SkillSpector lists as its own gap: instructions in Portuguese,
+  Spanish and French to override the user's instructions, to hide a step
+  from the user, or to lie to an auditor; invisible Unicode including the
+  Tags block; descriptions that claim every request.
 
-### As a Plugin in Google Antigravity
-Clone directly into your project's `.agents/plugins/` directory:
+Without SkillSpector the project-policy line decides alone and the report says
+`Evidence lines: project-policy`. `--require-scanner` holds instead, for
+deployments that mandate both lines. A scanner that cannot be trusted never
+masks a Blocker: rejection is decided first.
+
+Runtime enforcement of declared URLs belongs to the host (see the skill's
+"Runtime relationship"); this plugin produces the evidence, it does not
+intercept traffic.
+
+## skill-release-gate
+
+*Should this skill be installed, published, signed, or enrolled?*
+
+Reads the two reports as data, never as instructions. Either owner's `Reject`
+rejects; missing evidence holds. SkillSpector evidence is required only when
+the security report says it was installed or required.
+
+## Install
+
+Claude Code:
+
+```text
+/plugin marketplace add JoaoPeixoto72/skill-auditor
+/plugin install skill-auditor@skill-auditor
+```
+
+Other hosts: copy `skills/*` into the host's skills folder
+(`~/.gemini/config/skills/` for Antigravity).
+
+## Use
+
+The wrappers resolve a working Python (not the Windows Store alias) and force
+UTF-8. Paths are relative to each skill's folder (`${CLAUDE_SKILL_DIR}` in
+Claude Code).
+
 ```bash
-git clone https://github.com/JoaoPeixoto72/skill-auditor.git .agents/plugins/skill-auditor
+bash skills/skill-readiness-auditor/scripts/audit.sh <skill-or-repo> --format json > readiness.json
+bash skills/skill-security-auditor/scripts/audit.sh <skill> --strict --format json > security.json
+bash skills/skill-release-gate/scripts/gate.sh --readiness-report readiness.json \
+  --security-report security.json --action install
 ```
-All 3 skills are automatically discovered and mounted by Antigravity.
 
-### As a Plugin in Claude Code
-Clone into `.claude/plugins/`:
+## Tests
+
 ```bash
-git clone https://github.com/JoaoPeixoto72/skill-auditor.git .claude/plugins/skill-auditor
+pip install pyyaml pytest
+pytest
 ```
 
-### Standalone Skills
-If you prefer installing individual skills without the plugin wrapper:
-```bash
-# Example for Claude Code
-cp -r skills/skill-readiness-auditor ~/.claude/skills/
-cp -r skills/skill-security-auditor ~/.claude/skills/
-cp -r skills/skill-release-gate ~/.claude/skills/
-
-# Example for Google Antigravity
-cp -r skills/skill-readiness-auditor ~/.gemini/config/skills/
-cp -r skills/skill-security-auditor ~/.gemini/config/skills/
-cp -r skills/skill-release-gate ~/.gemini/config/skills/
-```
-
----
-
-## Usage
-
-### 1. Run Mechanical Readiness Audit
-```bash
-python skills/skill-readiness-auditor/scripts/readiness-audit.py <path-to-skill>
-```
-To generate machine-readable JSON:
-```bash
-python skills/skill-readiness-auditor/scripts/readiness-audit.py <path-to-skill> --format json --output readiness-report.json
-```
-
-### 2. Run Security Audit
-```bash
-python skills/skill-security-auditor/scripts/security-audit.py <path-to-skill> --format json --output security-report.json
-```
-For strict mode (fails on warnings or missing scanners):
-```bash
-python skills/skill-security-auditor/scripts/security-audit.py <path-to-skill> --strict
-```
-
-### 3. Evaluate Release Gate
-```bash
-python skills/skill-release-gate/scripts/release-gate.py \
-  --readiness-report readiness-report.json \
-  --security-report security-report.json \
-  --action install
-```
-
-### 4. Running the Runtime Integrity Gate (Node.js)
-```javascript
-import { RuntimeGate } from './runtime/runtime-gate.mjs';
-import { TrustRegistry } from './runtime/trust-registry.mjs';
-
-const registry = new TrustRegistry('./registry.json');
-const gate = new RuntimeGate({ registry });
-
-// Check and intercept before running skill commands:
-const decision = await gate.evaluateSkillExecution('./path/to/skill');
-if (!decision.allowed) {
-  throw new Error(`Execution blocked: ${decision.reason}`);
-}
-```
-
----
-
-## Testing
-
-The project has comprehensive test coverage (119 automated tests):
-- **67 Python tests** for readiness, security, and release gate policies.
-- **52 Node.js tests** for runtime hashing, network governance, trust registry, and E2E lifecycle scenarios.
-
-Run all tests:
-```bash
-npm test
-```
-Or individually:
-```bash
-# Node.js tests (built-in runner, zero npm dependencies)
-npm run test:node
-
-# Python tests
-npm run test:py
-```
-
----
+The suite runs without SkillSpector; `tests/test_pipeline.py` takes a skill
+through all three owners.
 
 ## License
 

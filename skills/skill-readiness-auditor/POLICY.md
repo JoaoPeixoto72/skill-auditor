@@ -126,6 +126,8 @@ Valid name that does not match the folder → **Major · Defect**.
 
 Potential naming ambiguity without demonstrated routing impact → **Minor · Concern**.
 
+The format's hard limits are in §3.5.
+
 ### §3.2 Description
 
 `description` MUST:
@@ -145,6 +147,11 @@ Description with no actionable trigger → **Major · Defect**.
 Description that materially promises unsupported behavior → **Major · Defect**.
 
 Minor wording inefficiency with no routing impact → **Nit · Suggestion**.
+
+"Begins with a clear action verb" accepts the imperative, the third person
+(`Audits …`, the form Anthropic recommends), and a Portuguese or Spanish
+infinitive; "when to use" and "when not to use" are recognized in English,
+Portuguese and Spanish.
 
 ### §3.3 Allowed tools
 
@@ -179,6 +186,21 @@ Invalid `effort` → **Minor · Defect**.
 Missing `argument-hint` on a skill requiring arguments → **Minor · Concern**.
 
 ---
+
+### §3.5 Agent Skills format
+
+From Anthropic's "Skill authoring best practices"
+(https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices):
+
+- `name` longer than 64 characters, or containing `anthropic` or `claude` →
+  **Blocker · Defect** (the harness rejects it);
+- `description` longer than 1024 characters → **Blocker · Defect**;
+- an XML tag in `name` or `description` → **Major · Defect**;
+- a description in the first or second person ("I can…", "You can…") →
+  **Minor · Defect** (it is injected into the system prompt);
+- a dated instruction ("before August 2025") → **Minor · Defect**;
+- a reference that links to a further reference, or a reference over 100
+  lines without a contents list → **Nit · Suggestion**.
 
 ## §4. YAML validity
 
@@ -408,8 +430,11 @@ Repeated instructions MAY be reported when they:
 The active profile is resolved in this order:
 
 1. explicit audit argument;
-2. target frontmatter `model:`;
-3. `generic`.
+2. target frontmatter `model:` (a Claude Code model → `claude`);
+3. the host: a skill under `.claude/` or in a Claude Code plugin → `claude`;
+4. `generic`.
+
+Profiles and their cited sources: `references/model-profiles.md`.
 
 The report MUST record:
 

@@ -78,6 +78,57 @@ def extract_findings(report: Any) -> list[dict[str, Any]]:
     return []
 
 
+# A reference to a file the bundle does not ship (a project script, a file the
+# skill writes at runtime) leaves nothing inside the bundle uninspected.
+BENIGN_GAPS = {"reference_missing"}
+
+
+def accepted_gaps(analysis: dict[str, Any]) -> list[dict[str, Any]] | None:
+    """The ledger exceptions, when every one of them is a benign gap."""
+    exceptions = analysis.get("ledger_exceptions") or []
+    if analysis.get("coverage_percent", 0) < 100:
+        return None
+    if all(
+        isinstance(item, dict)
+        and not item.get("fatal")
+        and item.get("reason_code") in BENIGN_GAPS
+        for item in exceptions
+    ):
+        return exceptions
+    return None
+
+
+def distributed_files(target: Path) -> list[str] | None:
+    """Files git would distribute from `target`, or None outside a work tree.
+
+    A local `__pycache__` or build output is ignored by git and never ships;
+    a `.pyc` that is committed does ship, and stays in the scanned view.
+    """
+    try:
+        listing = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "."],
+            cwd=target, capture_output=True, check=True, timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return [name for name in listing.stdout.decode("utf-8").split("\0") if name]
+
+
+def scan_view(target: Path, scratch: Path) -> tuple[Path, str]:
+    """The directory SkillSpector reads: the distributed bundle when git knows it."""
+    files = distributed_files(target) if target.is_dir() else None
+    if files is None:
+        return target, "directory"
+    view = scratch / "bundle" / target.name
+    for name in files:
+        source = target / name
+        if source.is_file():
+            destination = view / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+    return view, "git-distributed-files"
+
+
 def infer_completeness(report: Any) -> str:
     if not isinstance(report, dict):
         return "FAILED"
@@ -88,7 +139,7 @@ def infer_completeness(report: Any) -> str:
         if analysis.get("is_complete") is True:
             return "COMPLETE"
         if analysis.get("is_complete") is False:
-            return "PARTIAL"
+            return "COMPLETE" if accepted_gaps(analysis) is not None else "PARTIAL"
 
     for key in ("complete", "is_complete", "analysis_complete"):
         if report.get(key) is True:
@@ -137,7 +188,8 @@ def main() -> int:
             "error": "skillspector executable not found",
             "findings": [],
         })
-        return 1
+        # Optional scanner: its absence is a recorded state, not a failure.
+        return 0
 
     try:
         help_text = parse_help(executable)
@@ -166,11 +218,12 @@ def main() -> int:
         prefix="skillspector-adapter-"
     ) as directory:
         raw_report_path = Path(directory) / "report.json"
+        scanned, view = scan_view(target, Path(directory))
 
         command = [
             executable,
             "scan",
-            str(target),
+            str(scanned),
             "--no-llm",
             "--format",
             "json",
@@ -248,6 +301,10 @@ def main() -> int:
 
     completeness = infer_completeness(raw_report)
     findings = extract_findings(raw_report)
+    # SkillSpector 2.x nests its verdict under `risk_assessment`.
+    raw_report = raw_report if isinstance(raw_report, dict) else {}
+    risk = raw_report.get("risk_assessment") or {}
+    analysis = raw_report.get("analysis_completeness")
 
     normalized = {
         "adapterVersion": "1.0.0",
@@ -259,18 +316,16 @@ def main() -> int:
         "completeness": completeness,
         "scannerVersion": version,
         "command": command,
+        "scannedView": view,
         "exitCode": process.returncode,
         "supportedStrictFlags": supported_flags,
         "omittedStrictFlags": omitted_flags,
-        "riskScore": (
-            raw_report.get("risk_score")
-            if isinstance(raw_report, dict)
-            else None
-        ),
-        "recommendation": (
-            raw_report.get("recommendation")
-            if isinstance(raw_report, dict)
-            else None
+        "riskScore": risk.get("score", raw_report.get("risk_score")),
+        "recommendation": risk.get("recommendation", raw_report.get("recommendation")),
+        "acceptedGaps": (
+            accepted_gaps(analysis) or []
+            if isinstance(analysis, dict) and analysis.get("is_complete") is False
+            else []
         ),
         "findings": findings,
         "rawReport": raw_report,

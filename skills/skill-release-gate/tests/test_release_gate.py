@@ -51,10 +51,12 @@ class ReleaseGateTests(unittest.TestCase):
         complete: str = "COMPLETE",
         gate_required: bool = False,
         enforcement: str = "NOT_REQUIRED",
+        scanner_required: bool = False,
     ) -> Path:
         return self.write("security.json", {
             "auditor": "skill-security-auditor",
             "strict": strict,
+            "scannerRequired": scanner_required,
             "securityVerdict": verdict,
             "enrolmentReady": verdict == "Eligible for enrolment",
             "skillspector": {
@@ -135,6 +137,21 @@ class ReleaseGateTests(unittest.TestCase):
             self.security(complete="PARTIAL"),
         )
         self.assertEqual(process.returncode, 1)
+        self.assertEqual(result["finalDecision"], "Hold")
+
+    def test_absent_scanner_is_not_missing_evidence(self) -> None:
+        process, result = self.run_gate(
+            self.readiness(),
+            self.security(complete="UNAVAILABLE"),
+        )
+        self.assertEqual(result["finalDecision"], "Eligible")
+        self.assertEqual(process.returncode, 0)
+
+    def test_required_scanner_must_have_run(self) -> None:
+        _, result = self.run_gate(
+            self.readiness(),
+            self.security(complete="UNAVAILABLE", scanner_required=True),
+        )
         self.assertEqual(result["finalDecision"], "Hold")
 
     def test_runtime_gate_must_be_verified(self) -> None:

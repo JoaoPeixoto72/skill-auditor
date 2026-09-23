@@ -43,8 +43,12 @@ VALID_MODELS = {
     "opus",
     "sonnet",
     "haiku",
+    "fable",
     "inherit",
 }
+
+# Claude Code also accepts a full model id (`claude-opus-5-5`).
+CLAUDE_MODEL_ID_RE = re.compile(r"^claude-[a-z0-9-]+$")
 
 VALID_EFFORTS = {
     "low",
@@ -52,11 +56,12 @@ VALID_EFFORTS = {
     "high",
 }
 
+# One profile per family whose vendor publishes prompting guidance the audit
+# can cite. `claude` follows Anthropic's current-model pages (see
+# references/model-profiles.md); a family without such a source is `generic`.
 VALID_PROFILES = {
     "generic",
-    "sol5.6",
-    "gemini3.8",
-    "opus5",
+    "claude",
 }
 
 EXCLUDED_DIRECTORIES = {
@@ -205,9 +210,13 @@ ACTION_VERBS = {
     "write",
 }
 
+# A reference starts a path: `scripts/x.py`, or a sibling skill's file as
+# `../other-skill/scripts/x.py`. Preceded by `/` it is the tail of a longer
+# path (`<plugin>/skills/a/scripts/x.py`) and is not this skill's resource.
 RESOURCE_REFERENCE_RE = re.compile(
-    r"(?<![A-Za-z0-9_.-])"
-    r"((?:references|scripts|assets|templates|schemas|baselines)/"
+    r"(?<![A-Za-z0-9_./<>-])"
+    r"((?:\.\./[A-Za-z0-9_.-]+/)?"
+    r"(?:references|scripts|assets|templates|schemas|baselines)/"
     r"[A-Za-z0-9_./*?{}\[\]-]+)"
 )
 
@@ -215,7 +224,8 @@ RESOURCE_REFERENCE_RE = re.compile(
 # by every skill of the plugin: the declared shared-resource root of §16.
 PLUGIN_RESOURCE_RE = re.compile(
     r"<plugin>/"
-    r"((?:references|scripts|assets|templates|schemas|baselines)/"
+    r"((?:skills/[A-Za-z0-9_.-]+/)?"
+    r"(?:references|scripts|assets|templates|schemas|baselines)/"
     r"[A-Za-z0-9_./*?{}\[\]-]+)"
 )
 
@@ -308,63 +318,60 @@ BASH_COMMAND_RE = re.compile(
     r"[A-Za-z0-9_./-]+(?:\s+[^\n`]*)?)"
 )
 
+# (pattern, operational effect, severity, replacement). Sources, dated, in
+# references/model-profiles.md: Anthropic's prompting pages for Claude Opus 5,
+# Sonnet 5 and the current-model best practices.
 PROFILE_PHRASES = {
-    "sol5.6": [
+    "claude": [
         (
-            re.compile(r"\bdouble[- ]check\s+(?:everything|all)\b", re.I),
-            "unbounded global verification request",
+            re.compile(r"\bCRITICAL\s*:|\bYOU\s+MUST\b|\bMUST\s+ALWAYS\b"),
+            "aggressive emphasis written for older models makes current models over-trigger",
+            "Minor",
+            "State the condition in plain words: 'Use X when ...'.",
         ),
         (
-            re.compile(r"\bverify\s+your\s+work\b", re.I),
-            "verification request has no explicit criteria",
+            re.compile(
+                r"\b(?:if|when)\s+in\s+doubt,?\s+(?:use|run|call|invoke|load)\b|"
+                r"\bdefault\s+to\s+using\b|"
+                r"\bem\s+caso\s+de\s+d[úu]vida,?\s+(?:usa|corre|chama)\b",
+                re.I,
+            ),
+            "a blanket default makes current models over-trigger the tool or skill",
+            "Minor",
+            "Name the situations where the tool helps instead of a default.",
         ),
         (
-            re.compile(r"\bthink\s+step\s+by\s+step\b", re.I),
-            "requests unbounded internal reasoning instead of observable criteria",
+            re.compile(
+                r"\bdouble[- ]check\b|\bre-?verify\b|\bverify\s+your\s+(?:work|answer)\b|"
+                r"\bcheck\s+your\s+work\b|\buse\s+a\s+subagent\s+to\s+(?:verify|double[- ]check|review)\b|"
+                r"\bverifica(?:r)?\s+(?:tudo\s+)?duas\s+vezes\b|\bvolta\s+a\s+verificar\b",
+                re.I,
+            ),
+            "current Claude models already self-verify; an explicit re-check instruction causes over-verification",
+            "Minor",
+            "Remove it, or replace it with a concrete gate: 'Continue only when <command> exits 0'.",
         ),
         (
-            re.compile(r"\bbe\s+(?:maximally\s+)?thorough\b", re.I),
-            "thoroughness request has no bounded checklist",
-        ),
-    ],
-    "gemini3.8": [
-        (
-            re.compile(r"\breview\s+everything\s+again\b", re.I),
-            "creates an unbounded repeated review pass",
-        ),
-        (
-            re.compile(r"\bcheck\s+whether\s+you\s+missed\s+anything\b", re.I),
-            "has no finite completion criterion",
+            re.compile(
+                r"\bonly\s+report\s+(?:the\s+)?(?:high|critical)(?:[- ]severity)?\b|\bbe\s+conservative\b|"
+                r"\bdo(?:\s+not|n'?t)\s+nitpick\b|\breporta\s+s[óo]\s+(?:o\s+)?(?:grave|cr[íi]tico)",
+                re.I,
+            ),
+            "Sonnet 5 and Opus 5 follow a self-filter literally and drop real findings",
+            "Minor",
+            "Name the bar concretely ('report anything that could cause incorrect behaviour; omit pure style').",
         ),
         (
-            re.compile(r"\bdouble[- ]check\s+(?:everything|all)\b", re.I),
-            "creates an unbounded global verification pass",
+            re.compile(r"\b(?:do\s+not|don'?t)\s+(?:think|reason)\b|\bwithout\s+thinking\b", re.I),
+            "an instruction not to think increases internal-tag leakage when thinking is disabled",
+            "Minor",
+            "Remove it; control cost with effort, not with an instruction.",
         ),
         (
-            re.compile(r"\buse\s+whichever\s+document\s+seems\b", re.I),
-            "does not define source authority",
-        ),
-    ],
-    "opus5": [
-        (
-            re.compile(r"\bskip\s+verification\b", re.I),
-            "removes a required validation gate",
-        ),
-        (
-            re.compile(r"\bassume\s+(?:it|this)\s+works\b", re.I),
-            "branches on an unverified assumption",
-        ),
-        (
-            re.compile(r"\btrust\s+the\s+first\s+(?:answer|result)\b", re.I),
-            "prevents evidence-based correction",
-        ),
-        (
-            re.compile(r"\bcontinue\s+(?:even\s+)?if\s+.*fails\b", re.I),
-            "continues after a failed gate",
-        ),
-        (
-            re.compile(r"\buse\s+whatever\s+tools\s+(?:are\s+)?(?:useful|necessary)\b", re.I),
-            "creates an unbounded capability request",
+            re.compile(r"\bafter\s+every\s+\d+\s+tool\s+calls?\b", re.I),
+            "forced progress narration is scaffolding current models no longer need",
+            "Nit",
+            "Describe the update you want instead of a fixed cadence.",
         ),
     ],
 }
@@ -666,6 +673,16 @@ def determine_repository_root(
 ) -> Path:
     requested_root = requested_root.resolve()
 
+    # The git root first: a skill resolves the same resources whether it was
+    # audited alone or found inside a directory of skills.
+    current = skill_dir
+    while True:
+        if (current / ".git").exists():
+            return current
+        if current.parent == current:
+            break
+        current = current.parent
+
     if requested_root != skill_dir and requested_root in skill_dir.parents:
         return requested_root
 
@@ -823,9 +840,17 @@ def extract_commands(text: str) -> list[str]:
 
 
 def description_first_word(description: str) -> str:
-    match = re.match(r"\s*([A-Za-z]+)", description)
+    match = re.match(r"\s*([^\W\d_]+)", description)
 
     return match.group(1).lower() if match else ""
+
+
+def begins_with_action(description: str) -> bool:
+    """An imperative, a third-person verb, or a Romance-language infinitive."""
+    word = description_first_word(description)
+    stems = {word, word[:-1], word[:-2]} if word.endswith("s") else {word}
+    romance_infinitive = len(word) > 3 and word.endswith(("ar", "er", "ir"))
+    return bool(stems & ACTION_VERBS) or romance_infinitive
 
 
 def description_has_when_to_use(description: str) -> bool:
@@ -841,6 +866,12 @@ def description_has_when_to_use(description: str) -> bool:
         r"\bonce\s+\w+",
         r"\bprior\s+to\s+\w+",
         r"\bat\s+(?:commit|release|review|install\w*|publish\w*)\b",
+        # Portuguese and Spanish: the same moments, in the author's language.
+        r"\b(?:usar|use|utilizar)\s+(?:quando|antes|depois|no|na|ao|al|cuando)\b",
+        r"\b(?:quando|cuando)\s+\w+",
+        r"\b(?:antes|depois|despu[ée]s)\s+de\s+\w+",
+        r"\bno\s+(?:in[íi]cio|princ[íi]pio|fim|final)\s+de\b",
+        r"\bao\s+(?:abrir|fechar|come[çc]ar|terminar|rever)\b",
     ]
 
     return any(re.search(pattern, description, re.I) for pattern in patterns)
@@ -853,6 +884,8 @@ def description_has_negative_boundary(description: str) -> bool:
         r"\bnot\s+for\b",
         r"\binstead\s+use\b",
         r"\buse\s+.+\s+instead\b",
+        r"\bn[ãa]o\s+(?:usar|use|é|e|serve)\s+para\b",
+        r"\bno\s+(?:usar|use|es|sirve)\s+para\b",
     ]
 
     return any(re.search(pattern, description, re.I) for pattern in patterns)
@@ -872,24 +905,25 @@ def sibling_skill_exists(skill_dir: Path, name: str) -> bool:
 def resolve_profile(
     requested_profile: str | None,
     frontmatter: dict[str, Any],
+    skill_dir: Path,
 ) -> tuple[str, str]:
     if requested_profile:
         return requested_profile, "--model"
 
     declared = frontmatter.get("model")
 
-    mapping = {
-        "opus": "opus5",
-        "sonnet": "generic",
-        "haiku": "generic",
-        "inherit": "generic",
-    }
-
-    if isinstance(declared, str) and declared in mapping:
-        return mapping[declared], f"frontmatter model: {declared}"
+    if isinstance(declared, str) and (
+        declared in VALID_MODELS or CLAUDE_MODEL_ID_RE.match(declared)
+    ):
+        return "claude", f"frontmatter model: {declared}"
 
     if declared:
         return "generic", f"fallback from unresolved model: {declared}"
+
+    # A skill under `.claude/` or inside a Claude Code plugin runs on Claude.
+    root = plugin_root(skill_dir)
+    if ".claude" in skill_dir.parts or (root is not None and (root / ".claude-plugin").is_dir()):
+        return "claude", "host: Claude Code"
 
     return "generic", "fallback"
 
@@ -987,9 +1021,7 @@ def check_frontmatter(
             "§3.2 Description",
         )
     else:
-        first_word = description_first_word(description)
-
-        if first_word not in ACTION_VERBS:
+        if not begins_with_action(description):
             add_finding(
                 findings,
                 "Minor",
@@ -1180,7 +1212,28 @@ def check_read_only_permissions(
     frontmatter: dict[str, Any],
     findings: list[Finding],
 ) -> None:
-    if not re.search(r"\bread[- ]only\b", text, re.I):
+    if not claims_read_only(text):
+        return
+
+    allowed = {
+        item.lower()
+        for item in normalize_tool_collection(frontmatter.get("allowed-tools"))
+    }
+    # `Write` creates a report; `Edit` changes what exists. An auditor that
+    # writes its report is still read-only toward its target.
+    writers = sorted(t for t in ("edit", "multiedit", "notebookedit") if t in allowed)
+    if writers:
+        add_finding(
+            findings,
+            "Major",
+            "Defect",
+            "Skill claims to be read-only but allows write tools",
+            location_for(skill_md, text, "allowed-tools:"),
+            json.dumps(writers),
+            "The declared operating mode and the capability contract disagree.",
+            "Drop the write tools, or drop the read-only claim.",
+            "§14 Permission coherence",
+        )
         return
 
     denied = {
@@ -1201,6 +1254,22 @@ def check_read_only_permissions(
                 f"Add {required} to disallowed-tools.",
                 "§14 Permission coherence",
             )
+
+
+READ_ONLY_RE = re.compile(r"\bread[- ]only\b", re.I)
+# "not read-only", "não é read-only", "no es read-only", "isn't read-only".
+NEGATED_BEFORE_RE = re.compile(
+    r"\b(?:not|never|isn'?t|no|n[ãa]o|nao|nunca)\b(?:\s+(?:is|é|e|es|a|um|uma))?\s*$",
+    re.I,
+)
+
+
+def claims_read_only(text: str) -> bool:
+    for match in READ_ONLY_RE.finditer(text):
+        before = text[max(0, match.start() - 24):match.start()]
+        if not NEGATED_BEFORE_RE.search(before):
+            return True
+    return False
 
 
 def check_permission_commands(
@@ -1373,18 +1442,23 @@ def check_resources(
     text: str,
     findings: list[Finding],
 ) -> tuple[list[str], list[str], list[str]]:
-    references = sorted(
-        {
-            normalize_resource_reference(match)
-            for match in RESOURCE_REFERENCE_RE.findall(text)
-        }
-    )
-
     plugin_references = {
         normalize_resource_reference(match)
         for match in PLUGIN_RESOURCE_RE.findall(text)
     }
+    # `${CLAUDE_SKILL_DIR}/scripts/x` is this skill's own `scripts/x`.
+    local_text = text.replace("${CLAUDE_SKILL_DIR}/", "")
+    references = sorted(
+        {
+            normalize_resource_reference(match)
+            for match in RESOURCE_REFERENCE_RE.findall(local_text)
+        }
+        | plugin_references
+    )
     shared_root = plugin_root(skill_dir) if plugin_references else None
+    # A skill in a project's `.claude/skills` or `.agents/skills` ships with
+    # the repository; reaching a repository file is its design, not coupling.
+    project_skill = is_project_skill(skill_dir)
 
     resolved: list[str] = []
     unresolved: list[str] = []
@@ -1422,6 +1496,9 @@ def check_resources(
                 for path in matches
             )
 
+            if project_skill:
+                continue
+
             add_finding(
                 findings,
                 "Minor",
@@ -1436,9 +1513,25 @@ def check_resources(
             )
             continue
 
+        if reference in plugin_references and shared_root is None:
+            # `<plugin>/…` names a file of a plugin this skill is not part of.
+            add_finding(
+                findings,
+                "Nit",
+                "Concern",
+                "Plugin resource cannot be resolved from here",
+                location_for(skill_md, text, reference),
+                reference,
+                "The path depends on where another plugin is installed.",
+                "Name the plugin and skill the file belongs to, so the reader can find it.",
+                "§16 Local resources",
+                confidence="Inferred",
+            )
+            continue
+
         unresolved.append(reference)
 
-        central_script = reference.startswith("scripts/")
+        central_script = "scripts/" in reference
         severity = "Blocker" if central_script else "Major"
 
         add_finding(
@@ -1458,6 +1551,109 @@ def check_resources(
         )
 
     return references, sorted(set(resolved)), unresolved
+
+
+def is_project_skill(skill_dir: Path) -> bool:
+    parts = skill_dir.parts
+    return any(
+        parts[i] in (".claude", ".agents") and parts[i + 1] == "skills"
+        for i in range(len(parts) - 1)
+    )
+
+
+# Hard limits of the Agent Skills format (Anthropic, "Skill authoring best
+# practices"): the harness rejects or truncates past them.
+NAME_MAX, DESCRIPTION_MAX = 64, 1024
+RESERVED_NAME_RE = re.compile(r"anthropic|claude")
+XML_TAG_RE = re.compile(r"<[A-Za-z/][^<>]*>")
+PERSON_RE = re.compile(
+    r"^\s*(?:I|I'm|I'll|We|You|Eu|Posso|Podes|Puedo|Puedes)\b|"
+    r"\b(?:I\s+can|I\s+will|you\s+can\s+use\s+this)\b",
+    re.I,
+)
+MONTHS = (r"(?:January|February|March|April|May|June|July|August|September|October|"
+          r"November|December|janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|"
+          r"setembro|outubro|novembro|dezembro)")
+TIME_SENSITIVE_RE = re.compile(
+    r"\b(?:before|after|until|as\s+of|since|antes\s+de|depois\s+de|at[ée])\s+"
+    + MONTHS + r"(?:\s+de)?\s+20\d\d\b|\bas\s+of\s+20\d\d\b",
+    re.I,
+)
+
+
+def check_platform_rules(
+    skill_md: Path,
+    text: str,
+    frontmatter: dict[str, Any],
+    findings: list[Finding],
+) -> None:
+    """The format's hard limits, plus two authoring rules the docs single out."""
+    name = str(frontmatter.get("name") or "")
+    description = str(frontmatter.get("description") or "")
+    rule = "§3.5 Agent Skills format"
+
+    def flag(severity: str, title: str, evidence: str, impact: str, fix: str) -> None:
+        add_finding(findings, severity, "Defect", title,
+                    location_for(skill_md, text, evidence[:40]), evidence, impact, fix, rule)
+
+    if len(name) > NAME_MAX:
+        flag("Blocker", "Skill name exceeds 64 characters", name,
+             "The harness rejects the skill.", "Shorten the name.")
+    if RESERVED_NAME_RE.search(name):
+        flag("Blocker", "Skill name uses a reserved word", name,
+             "'anthropic' and 'claude' are reserved in skill names.", "Rename the skill.")
+    if len(description) > DESCRIPTION_MAX:
+        flag("Blocker", "Description exceeds 1024 characters", description[:80],
+             "The harness truncates or rejects it; routing text is lost.",
+             "Keep when-to-use in the description; move detail into the body.")
+    for field, value in (("name", name), ("description", description)):
+        tag = XML_TAG_RE.search(value)
+        if tag:
+            flag("Major", f"XML tag in {field}", tag.group(0),
+                 "The format forbids XML tags in the frontmatter fields the router reads.",
+                 "Remove the tag.")
+    person = PERSON_RE.search(description)
+    if person:
+        flag("Minor", "Description is not written in the third person", person.group(0),
+             "The description is injected into the system prompt; a first- or second-person "
+             "voice degrades discovery.",
+             "Write 'Extracts …, Use when …' instead of 'I can …' or 'You can …'.")
+    dated = TIME_SENSITIVE_RE.search(text)
+    if dated:
+        flag("Minor", "Time-sensitive instruction", dated.group(0),
+             "The instruction becomes wrong on a date nobody will remember to check.",
+             "Describe the current behaviour; move the old one to an 'Old patterns' section.")
+
+
+MARKDOWN_LINK_RE = re.compile(r"\]\((?!https?:|#|mailto:)([^)#\s]+\.md)\)")
+TOC_RE = re.compile(r"^#{1,3}\s*(?:contents|table\s+of\s+contents|[íi]ndice|contenido|sum[áa]rio)\b",
+                    re.I | re.M)
+
+
+def check_reference_files(
+    skill_dir: Path,
+    resolved: list[str],
+    findings: list[Finding],
+) -> None:
+    """References one level deep, and long ones navigable (Anthropic best practices)."""
+    for relative in resolved:
+        path = skill_dir / relative
+        if path.suffix != ".md" or not path.is_file() or path.name == "SKILL.md":
+            continue
+        text = read_text(path) or ""
+        nested = MARKDOWN_LINK_RE.search(text)
+        if nested:
+            add_finding(findings, "Nit", "Suggestion", "Reference links to a further reference",
+                        location_for(path, text, nested.group(1)), nested.group(1),
+                        "The model may only preview a file reached through another file.",
+                        "Link every reference directly from SKILL.md.", "§16 Local resources",
+                        confidence="Inferred")
+        lines = text.count("\n")
+        if lines > 100 and not TOC_RE.search(text):
+            add_finding(findings, "Nit", "Suggestion", "Long reference has no table of contents",
+                        f"{path}:1", f"{lines} lines",
+                        "A partial read cannot see what the file covers.",
+                        "Add a 'Contents' list at the top.", "§16 Local resources")
 
 
 def check_scripts(
@@ -1486,7 +1682,10 @@ def check_scripts(
         relative = script.relative_to(skill_dir).as_posix()
         first_line = text.splitlines()[0] if text.splitlines() else ""
 
-        if suffix in DIRECT_EXECUTION_EXTENSIONS and not first_line.startswith("#!"):
+        # An imported module is not executed directly; only an entry point
+        # needs an interpreter line.
+        entry_point = suffix != ".py" or "__main__" in text
+        if suffix in DIRECT_EXECUTION_EXTENSIONS and entry_point and not first_line.startswith("#!"):
             add_finding(
                 findings,
                 "Minor",
@@ -1529,19 +1728,25 @@ def check_model_fit(
     if profile == "generic":
         return
 
-    for pattern, impact in PROFILE_PHRASES.get(profile, []):
+    # A phrase inside a fenced block is an illustration ("Avoid: ..."), not an
+    # instruction the model receives as one.
+    fences = [m.span() for m in re.finditer(r"^```.*?^```", text, re.M | re.S)]
+
+    for pattern, impact, severity, replacement in PROFILE_PHRASES.get(profile, []):
         for match in pattern.finditer(text):
+            if any(start <= match.start() < end for start, end in fences):
+                continue
             phrase = match.group(0)
 
             add_finding(
                 findings,
-                "Major",
+                severity,
                 "Defect",
                 f"Instruction conflicts with the {profile} profile",
                 location_for(skill_md, text, phrase),
                 f"{phrase!r}; profile resolved from {profile_source}",
-                impact.capitalize() + ".",
-                "Replace the phrase with a finite check, observable pass condition, and explicit failure action.",
+                impact[0].upper() + impact[1:] + ".",
+                replacement,
                 "§12 Model fit",
             )
 
@@ -1817,6 +2022,7 @@ def audit_target(
         profile, profile_source = resolve_profile(
             requested_profile,
             frontmatter,
+            skill_dir,
         )
 
         if frontmatter_valid:
@@ -1830,6 +2036,8 @@ def audit_target(
             )
 
             description = str(frontmatter.get("description", ""))
+
+            check_platform_rules(skill_md, text, frontmatter, findings)
 
             check_description_routing(
                 skill_md,
@@ -1877,6 +2085,7 @@ def audit_target(
         )
 
         check_scripts(skill_dir, findings)
+        check_reference_files(skill_dir, resolved_resources, findings)
 
         check_model_fit(
             skill_md,

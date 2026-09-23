@@ -4,9 +4,10 @@
 
 `--strict` means:
 
-- missing SkillSpector → `Hold`;
-- incomplete SkillSpector evidence → `Hold`;
-- failed scanner-trust verification → `Hold`;
+- SkillSpector not installed → the project-policy line decides alone
+  (`Hold` only with `--require-scanner`);
+- incomplete evidence from an installed SkillSpector → `Hold`;
+- failed scanner-trust verification → `Hold`, after every `Reject` rule;
 - parser failure → `Hold`, or `Reject` when malicious evasion is indicated;
 - skipped executable file → `Hold`;
 - undeclared runtime URL → `Reject`;

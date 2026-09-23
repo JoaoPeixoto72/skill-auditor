@@ -161,7 +161,10 @@ fail on incomplete analysis
 
 When the installed version does not expose equivalent CLI flags, the adapter MUST interpret the report and enforce equivalent local behavior.
 
-SkillSpector unavailable → `Hold`.
+SkillSpector not installed → the project-policy line decides alone and the
+report records `analysisLines: ["project-policy"]`; `Hold` only under
+`--require-scanner`. A present scanner that cannot be trusted → `Hold`, never
+over a Blocker: rejection is decided first.
 
 SkillSpector incomplete on a relevant file → `Hold`.
 
@@ -1347,8 +1350,8 @@ Strict mode is mandatory for:
 
 Strict mode rules:
 
-- scanner unavailable → Hold;
-- scanner partial → Hold;
+- scanner not installed → decided on the project-policy line (Hold under `--require-scanner`);
+- installed scanner partial → Hold;
 - uninspected executable → Hold;
 - undeclared runtime URL → Reject;
 - invalid Tier 1 declaration → Reject;
