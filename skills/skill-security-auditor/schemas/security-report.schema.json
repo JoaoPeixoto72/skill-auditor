@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-security-auditor/security-report.schema.json",
+  "title": "Agent Skill Security Report",
+  "description": "Schema for JSON reports produced by skill-security-auditor",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "auditor",
+    "auditorVersion",
+    "strict",
+    "securityVerdict",
+    "enrolmentReady",
+    "skillspector",
+    "results",
+    "safetyRecord"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "auditor": {
+      "type": "string",
+      "const": "skill-security-auditor"
+    },
+    "auditorVersion": {
+      "type": "string"
+    },
+    "strict": {
+      "type": "boolean"
+    },
+    "securityVerdict": {
+      "type": "string",
+      "enum": [
+        "Reject",
+        "Hold",
+        "Eligible with accepted risks",
+        "Eligible for enrolment"
+      ]
+    },
+    "enrolmentReady": {
+      "type": "boolean"
+    },
+    "skillspector": {
+      "type": "object",
+      "required": ["completeness", "findings"],
+      "properties": {
+        "completeness": {
+          "type": "string",
+          "enum": ["COMPLETE", "PARTIAL", "UNAVAILABLE", "FAILED"]
+        },
+        "scannerVersion": { "type": ["string", "null"] },
+        "status": { "type": "string" },
+        "riskScore": { "type": ["number", "null"] },
+        "recommendation": { "type": ["string", "null"] },
+        "findings": { "type": "array" }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "skill",
+          "fileCount",
+          "textFileCount",
+          "networkCapable",
+          "hasExternalResources",
+          "requiresRuntimeGate",
+          "runtimeEnforcement",
+          "findings"
+        ],
+        "properties": {
+          "skill": { "type": "string" },
+          "fileCount": { "type": "integer" },
+          "textFileCount": { "type": "integer" },
+          "binaryFiles": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "dependencyFiles": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "networkCapable": { "type": "boolean" },
+          "hasExternalResources": { "type": "boolean" },
+          "requiresRuntimeGate": { "type": "boolean" },
+          "runtimeEnforcement": {
+            "type": "string",
+            "enum": ["VERIFIED", "UNVERIFIED", "NOT_REQUIRED"]
+          },
+          "observedUrls": { "type": "object" },
+          "declaredResources": { "type": "array" },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "severity",
+                "type",
+                "confidence",
+                "title",
+                "location",
+                "evidence",
+                "impact",
+                "fix",
+                "owner",
+                "source",
+                "rule"
+              ],
+              "properties": {
+                "severity": {
+                  "type": "string",
+                  "enum": ["Blocker", "Major", "Minor", "Nit"]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["Security", "Defect", "Concern", "Suggestion"]
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["Observed", "Inferred", "Unknown"]
+                },
+                "title": { "type": "string" },
+                "location": { "type": "string" },
+                "evidence": { "type": "string" },
+                "impact": { "type": "string" },
+                "fix": { "type": "string" },
+                "owner": { "type": "string", "const": "Security" },
+                "source": { "type": "string" },
+                "rule": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "safetyRecord": {
+      "type": "object",
+      "required": [
+        "targetFilesModified",
+        "targetScriptsExecuted",
+        "targetUrlsFetched",
+        "dependenciesInstalled",
+        "trustRegistryModified"
+      ],
+      "properties": {
+        "targetFilesModified": { "type": "boolean", "const": false },
+        "targetScriptsExecuted": { "type": "boolean", "const": false },
+        "targetUrlsFetched": { "type": "boolean", "const": false },
+        "dependenciesInstalled": { "type": "boolean", "const": false },
+        "trustRegistryModified": { "type": "boolean", "const": false }
+      }
+    }
+  }
+}

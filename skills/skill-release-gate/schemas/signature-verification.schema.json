@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-release-gate/signature-verification.schema.json",
+  "title": "Agent Skill Signature Verification Evidence",
+  "description": "Evidence from trusted signature verifier for bundle provenance",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "producer",
+    "target",
+    "bundleHash",
+    "keyId",
+    "signatureValid",
+    "timestamp"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "producer": {
+      "type": "string",
+      "const": "trusted-signature-verifier"
+    },
+    "target": {
+      "type": "string"
+    },
+    "bundleHash": {
+      "type": "string",
+      "pattern": "^(sha256:)?[a-f0-9]{64}$"
+    },
+    "keyId": {
+      "type": "string"
+    },
+    "signatureAlgorithm": {
+      "type": "string",
+      "enum": [
+        "ed25519"
+      ],
+      "default": "ed25519"
+    },
+    "signatureValid": {
+      "type": "boolean"
+    },
+    "signerIdentity": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "details": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

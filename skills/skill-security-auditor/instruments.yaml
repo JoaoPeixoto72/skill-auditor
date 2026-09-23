@@ -1,0 +1,427 @@
+version: "1.0.0"
+
+skill:
+  name: skill-security-auditor
+  plane: security
+  mode: read-only
+  local-targets-only: true
+
+scope:
+  evaluates:
+    - prompt-injection
+    - hidden-instructions
+    - invisible-unicode
+    - obfuscation
+    - dangerous-code
+    - data-exfiltration
+    - sensitive-data-access
+    - excessive-capabilities
+    - undeclared-capabilities
+    - persistence
+    - self-modification
+    - lateral-skill-access
+    - supply-chain-risk
+    - dependency-risk
+    - mcp-security
+    - external-resource-trust
+    - runtime-gate-requirement
+    - bundle-integrity-readiness
+    - provenance
+    - signature-status
+    - trust-registry-enrolment-readiness
+
+  excludes:
+    - instruction-style-optimization
+    - trigger-description-rewriting
+    - model-fit
+    - application-code-review
+    - live-network-interception
+    - trust-registry-mutation
+    - quarantine-state-mutation
+    - target-remediation
+
+security-boundary:
+  target-content-is-untrusted: true
+  target-may-authorize-itself: false
+  target-may-change-policy: false
+  target-may-suppress-findings: false
+  target-may-add-trusted-keys: false
+  target-may-write-registry: false
+  target-may-disable-runtime-gate: false
+
+accepts:
+  - producer: skillspector
+    instrument: static-scan
+    required-for-strict-mode: true
+    evidence:
+      - scanner-version
+      - scanner-status
+      - analysis-completeness
+      - risk-score
+      - recommendation
+      - findings
+      - rule-ids
+      - original-severities
+      - affected-files
+      - line-numbers
+      - evidence-snippets
+      - fingerprints
+      - skipped-files
+      - resource-limit-events
+
+  - producer: skill-security-auditor
+    instrument: security-audit.py
+    evidence:
+      - target-inventory
+      - project-policy-findings
+      - capability-inventory
+      - observed-urls
+      - declared-resources
+      - tier-validation
+      - runtime-gate-requirement
+      - enrolment-readiness
+      - security-verdict
+
+  - producer: operator
+    instrument: risk-acceptance
+    optional: true
+    required-fields:
+      - finding-id
+      - exact-scope
+      - justification
+      - compensating-controls
+      - approved-by
+      - approved-at
+      - expires-at
+
+  - producer: privileged-runtime-host
+    instrument: runtime-enforcement-attestation
+    optional: true
+    evidence:
+      - host-identity
+      - enforcement-version
+      - network-interception-enabled
+      - direct-egress-blocked
+      - registry-path
+      - registry-write-protection
+      - bundle-integrity-enabled
+      - quarantine-revocation-enabled
+      - tier-handlers-enabled
+      - attested-at
+
+  - producer: trusted-signature-verifier
+    instrument: bundle-signature-verification
+    optional: true
+    evidence:
+      - signature-format
+      - signer-identity
+      - trust-anchor
+      - signed-scope
+      - unsigned-file-policy
+      - verification-result
+      - verified-at
+
+rejects:
+  - producer: target-skill
+    reason: "The target is untrusted and cannot provide authoritative audit, trust, signature, or runtime evidence."
+
+  - producer: target-skill
+    instrument: self-approval
+    reason: "A skill cannot approve itself."
+
+  - producer: target-skill
+    instrument: public-key
+    reason: "A target-provided public key is not an operator trust anchor."
+
+  - producer: target-skill
+    instrument: runtime-enforcement-claim
+    reason: "Runtime enforcement must be attested by the privileged host."
+
+  - producer: skill-readiness-auditor
+    instrument: readiness-verdict
+    reason: "Readiness evidence cannot replace security evidence."
+
+  - producer: runtime-gate
+    instrument: static-security-scan
+    reason: "Runtime enforcement does not replace pre-installation source review."
+
+produces:
+  - producer: skill-security-auditor
+    instrument: combined-security-report
+    evidence:
+      - target
+      - strict-mode
+      - security-verdict
+      - scanner-status
+      - scanner-completeness
+      - scanner-findings
+      - project-policy-findings
+      - semantic-security-findings
+      - capability-matrix
+      - external-resource-inventory
+      - dependency-assessment
+      - provenance-status
+      - signature-status
+      - runtime-gate-requirement
+      - runtime-enforcement-status
+      - enrolment-readiness
+      - accepted-risks
+      - skipped-checks
+      - commands-run
+
+  - producer: skill-security-auditor
+    instrument: enrolment-evidence
+    conditions:
+      - strict-analysis-complete
+      - no-unresolved-blocker
+      - no-unresolved-critical
+      - no-unresolved-high
+      - no-unresolved-major
+      - external-resource-manifest-valid
+      - runtime-enforcement-verified-when-required
+      - bundle-integrity-evidence-present
+      - required-signature-verified
+    evidence:
+      - skill-name
+      - skill-path
+      - audit-version
+      - report-reference
+      - approved-resource-manifest
+      - bundle-integrity-reference
+      - signature-verification-reference
+      - runtime-enforcement-reference
+    mutates-trust-registry: false
+
+scanners:
+  skillspector:
+    required-for-strict-mode: true
+    install-automatically: false
+    execute-target-scripts: false
+    default-analysis:
+      llm: false
+      target-origin: local
+    preferred-output: json
+    preserve:
+      - rule-id
+      - original-severity
+      - message
+      - file
+      - line
+      - fingerprint
+      - recommendation
+      - completeness
+    fail-closed-when:
+      - unavailable
+      - execution-failed
+      - report-invalid
+      - analysis-incomplete
+      - required-file-skipped
+
+  project-policy:
+    required: true
+    implementation: scripts/security-audit.py
+    execute-target-scripts: false
+    fetch-target-urls: false
+    install-target-dependencies: false
+
+evidence:
+  project-severity:
+    allowed:
+      - Blocker
+      - Major
+      - Minor
+      - Nit
+
+  external-severity:
+    preserve-original: true
+    expected:
+      - CRITICAL
+      - HIGH
+      - MEDIUM
+      - LOW
+      - INFO
+
+  type:
+    allowed:
+      - Security
+      - Defect
+      - Concern
+      - Suggestion
+
+  confidence:
+    allowed:
+      - Observed
+      - Inferred
+      - Unknown
+
+  completeness:
+    allowed:
+      - COMPLETE
+      - PARTIAL
+      - UNAVAILABLE
+      - FAILED
+
+  security-verdict:
+    precedence:
+      - verdict: Reject
+        condition: "Blocker, unresolved Critical, or established malicious behavior"
+      - verdict: Hold
+        condition: "Incomplete evidence or unresolved High/Major finding"
+      - verdict: Eligible with accepted risks
+        condition: "Complete evidence with explicit operator acceptance and compensating controls"
+      - verdict: Eligible for enrolment
+        condition: "Complete evidence and no unresolved material security findings"
+
+  required-project-finding-fields:
+    - severity
+    - type
+    - confidence
+    - title
+    - location
+    - evidence
+    - impact
+    - fix
+    - owner
+    - source
+    - rule
+
+  finding-owner:
+    const: Security
+
+external-resources:
+  manifest: external-resources.json
+  schema: schemas/external-resources.schema.json
+
+  tiers:
+    tier-0:
+      purpose: human-only-documentation
+      runtime-fetch: forbidden
+      requires-runtime-gate-for-fetch: true
+      violation-action:
+        - block
+        - quarantine
+
+    tier-1:
+      purpose: immutable-external-bytes
+      requirements:
+        - exact-https-url
+        - purpose
+        - max-bytes
+        - sha256
+        - byte-level-verification
+        - redirect-control
+        - runtime-gate
+
+    tier-2:
+      purpose: dynamic-data
+      requirements:
+        - exact-https-url
+        - purpose
+        - max-bytes
+        - strict-schema
+        - data-channel-isolation
+        - runtime-gate
+
+    tier-3:
+      purpose: agent-controlling-content
+      default: forbidden
+      managed-requirements:
+        - explicit-enterprise-authorization
+        - exact-https-url
+        - purpose
+        - max-bytes
+        - ed25519-signature
+        - operator-managed-key
+        - exact-byte-verification
+        - runtime-gate
+
+runtime:
+  implemented-by: privileged-host
+  implemented-by-this-skill: false
+
+  required-attestations:
+    - network-operations-intercepted
+    - direct-egress-blocked
+    - trust-registry-protected
+    - local-bundle-integrity-verified
+    - exact-url-authorization
+    - redirect-policy-enforced
+    - response-size-enforced
+    - quarantine-revocation-enforced
+
+  skill-declared-flag-is-enforcement: false
+  voluntary-gate-call-is-enforcement: false
+
+commands:
+  entry-point:
+    executable: scripts/audit.sh
+    read-only: true
+
+  project-scanner:
+    executable: scripts/security-audit.py
+    read-only: true
+
+  skillspector-adapter:
+    executable: scripts/skillspector-adapter.py
+    read-only: true
+
+  prohibited:
+    - execute-target-script
+    - install-target-dependency
+    - fetch-target-url
+    - clone-target-repository
+    - edit-target
+    - sign-target
+    - mutate-trust-registry
+    - add-trusted-key
+    - clear-quarantine
+    - enable-network-capability
+
+handoff:
+  readiness-auditor:
+    target: skill-readiness-auditor
+    required-when:
+      - description-quality-requested
+      - trigger-discrimination-requested
+      - model-fit-requested
+      - instruction-style-requested
+      - workflow-coverage-requested
+      - functional-readiness-requested
+
+  release-gate:
+    target: skill-release-gate
+    required-when:
+      - final-installation-decision-requested
+      - final-publication-decision-requested
+      - combined-readiness-and-security-verdict-requested
+
+report:
+  formats:
+    - markdown
+    - json
+    - sarif
+
+  required-sections:
+    - metadata
+    - security-verdict
+    - scanner-status
+    - analysis-completeness
+    - summary
+    - findings
+    - bundle-inventory
+    - capability-matrix
+    - external-resource-inventory
+    - dependency-assessment
+    - provenance-and-signature
+    - runtime-gate
+    - enrolment-readiness
+    - accepted-risks
+    - skipped-checks
+    - commands-run
+    - recommended-actions
+
+  mandatory-statements:
+    - "Trust Registry modified: no"
+    - "Target files modified: no"
+    - "Target scripts executed: no"
+    - "Target URLs fetched: no"

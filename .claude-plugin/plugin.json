@@ -1,0 +1,18 @@
+{
+  "name": "skill-auditor",
+  "version": "5.0.0",
+  "description": "Multi-skill audit suite and Runtime Integrity Gate for Agent Skills: instruction readiness review, strict security scanning, release-decision gating, and tamper-evident runtime protection.",
+  "author": {
+    "name": "JoaoPeixoto72"
+  },
+  "keywords": [
+    "agent-skills",
+    "audit",
+    "security",
+    "readiness",
+    "release-gate",
+    "runtime-integrity",
+    "claude-code",
+    "antigravity"
+  ]
+}

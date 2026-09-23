@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-security-auditor/external-resources.schema.json",
+  "title": "Agent Skill External Resources",
+  "description": "Project policy for declaring external resources used or referenced by an Agent Skill.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "hasExternalResources",
+    "requiresRuntimeGate",
+    "resources"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "hasExternalResources": {
+      "type": "boolean"
+    },
+    "requiresRuntimeGate": {
+      "type": "boolean"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/resource"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "hasExternalResources": {
+            "const": false
+          }
+        },
+        "required": [
+          "hasExternalResources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "resources": {
+            "maxItems": 0
+          },
+          "requiresRuntimeGate": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "hasExternalResources": {
+            "const": true
+          }
+        },
+        "required": [
+          "hasExternalResources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "resources": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resources": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "tier": {
+                  "enum": [
+                    1,
+                    2,
+                    3
+                  ]
+                }
+              },
+              "required": [
+                "tier"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requiresRuntimeGate": {
+            "const": true
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url",
+        "tier",
+        "purpose",
+        "maxBytes"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "tier": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500
+        },
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "hash": {
+          "type": "string",
+          "pattern": "^sha256-[a-fA-F0-9]{64}$"
+        },
+        "mediaType": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "keyId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,128}$"
+        },
+        "signatureHeader": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9-]{1,128}$"
+        },
+        "enterpriseAuthorization": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 500
+        },
+        "schema": {
+          "$ref": "#/$defs/dataSchema"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": 0
+              }
+            },
+            "required": [
+              "tier"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "hash"
+                  ]
+                },
+                {
+                  "required": [
+                    "schema"
+                  ]
+                },
+                {
+                  "required": [
+                    "keyId"
+                  ]
+                },
+                {
+                  "required": [
+                    "signatureHeader"
+                  ]
+                },
+                {
+                  "required": [
+                    "enterpriseAuthorization"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": 1
+              }
+            },
+            "required": [
+              "tier"
+            ]
+          },
+          "then": {
+            "required": [
+              "hash"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "schema"
+                  ]
+                },
+                {
+                  "required": [
+                    "keyId"
+                  ]
+                },
+                {
+                  "required": [
+                    "signatureHeader"
+                  ]
+                },
+                {
+                  "required": [
+                    "enterpriseAuthorization"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": 2
+              }
+            },
+            "required": [
+              "tier"
+            ]
+          },
+          "then": {
+            "required": [
+              "schema"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "hash"
+                  ]
+                },
+                {
+                  "required": [
+                    "keyId"
+                  ]
+                },
+                {
+                  "required": [
+                    "signatureHeader"
+                  ]
+                },
+                {
+                  "required": [
+                    "enterpriseAuthorization"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tier": {
+                "const": 3
+              }
+            },
+            "required": [
+              "tier"
+            ]
+          },
+          "then": {
+            "required": [
+              "keyId",
+              "signatureHeader",
+              "enterpriseAuthorization"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "hash"
+                  ]
+                },
+                {
+                  "required": [
+                    "schema"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "dataSchema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "allowedKeys"
+      ],
+      "properties": {
+        "type": {
+          "const": "object"
+        },
+        "allowedKeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "requiredKeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "propertyTypes": {
+          "type": "object",
+          "additionalProperties": {
+            "enum": [
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "object",
+              "array",
+              "null"
+            ]
+          }
+        },
+        "maxStringLength": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "maxArrayItems": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "allowAdditionalProperties": {
+          "const": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "requiredKeys"
+            ]
+          },
+          "then": {
+            "properties": {
+              "requiredKeys": {
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

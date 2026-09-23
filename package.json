@@ -1,0 +1,21 @@
+{
+  "name": "@joaopeixoto/skill-auditor",
+  "version": "5.0.0",
+  "description": "Multi-skill audit suite and Runtime Integrity Gate for Agent Skills",
+  "type": "module",
+  "scripts": {
+    "test": "node --test runtime/tests/*.test.mjs && pytest",
+    "test:node": "node --test runtime/tests/*.test.mjs",
+    "test:py": "pytest"
+  },
+  "keywords": [
+    "agent-skills",
+    "audit",
+    "security",
+    "runtime-gate",
+    "claude-code",
+    "antigravity"
+  ],
+  "author": "JoaoPeixoto72",
+  "license": "MIT"
+}

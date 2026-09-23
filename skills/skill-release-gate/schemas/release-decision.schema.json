@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-release-gate/release-decision.schema.json",
+  "title": "Agent Skill Release Gate Decision",
+  "description": "Schema for final release decisions produced by skill-release-gate",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "gate",
+    "gateVersion",
+    "action",
+    "target",
+    "readinessVerdict",
+    "securityVerdict",
+    "finalDecision",
+    "reasons",
+    "missingEvidence",
+    "nextActions",
+    "mutations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "gate": {
+      "type": "string",
+      "const": "skill-release-gate"
+    },
+    "gateVersion": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "install",
+        "publish",
+        "sign",
+        "enrol",
+        "reaudit"
+      ]
+    },
+    "target": {
+      "type": "string"
+    },
+    "readinessVerdict": {
+      "type": "string"
+    },
+    "securityVerdict": {
+      "type": "string"
+    },
+    "finalDecision": {
+      "type": "string",
+      "enum": [
+        "Reject",
+        "Hold",
+        "Needs revision",
+        "Eligible with accepted risks",
+        "Eligible"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "missingEvidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nextActions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mutations": {
+      "type": "object",
+      "required": [
+        "targetModified",
+        "reportsModified",
+        "trustRegistryModified",
+        "skillInstalled",
+        "skillSigned"
+      ],
+      "properties": {
+        "targetModified": {
+          "type": "boolean"
+        },
+        "reportsModified": {
+          "type": "boolean"
+        },
+        "trustRegistryModified": {
+          "type": "boolean"
+        },
+        "skillInstalled": {
+          "type": "boolean"
+        },
+        "skillSigned": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

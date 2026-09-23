@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-security-auditor/runtime-attestation.schema.json",
+  "title": "Agent Skill Runtime Attestation",
+  "description": "Schema for privileged runtime host enforcement attestation",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "producer",
+    "target",
+    "bundleHash",
+    "enforcement",
+    "timestamp",
+    "quarantineStatus"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "producer": {
+      "type": "string",
+      "const": "privileged-runtime-host"
+    },
+    "target": {
+      "type": "string"
+    },
+    "bundleHash": {
+      "type": "string",
+      "pattern": "^(sha256:)?[a-f0-9]{64}$"
+    },
+    "enforcement": {
+      "type": "string",
+      "enum": [
+        "VERIFIED",
+        "FAILED",
+        "NOT_REQUIRED"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "quarantineStatus": {
+      "type": "string",
+      "enum": [
+        "NONE",
+        "ACTIVE",
+        "CLEARED"
+      ]
+    },
+    "hostEnvironment": {
+      "type": "object",
+      "properties": {
+        "runtimeVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "type": "string"
+        },
+        "gateVersion": {
+          "type": "string"
+        }
+      }
+    },
+    "enforcedControls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "details": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

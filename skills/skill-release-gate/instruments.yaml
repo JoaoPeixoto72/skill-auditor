@@ -1,0 +1,77 @@
+version: "1.0.0"
+
+skill:
+  name: skill-release-gate
+  plane: release-decision
+  mode: read-only
+
+accepts:
+  - producer: skill-readiness-auditor
+    instrument: readiness-report
+    required: true
+
+  - producer: skill-security-auditor
+    instrument: combined-security-report
+    required: true
+
+  - producer: operator
+    instrument: risk-acceptance
+    optional: true
+
+  - producer: privileged-runtime-host
+    instrument: runtime-enforcement-attestation
+    optional: true
+
+  - producer: trusted-signature-verifier
+    instrument: signature-verification
+    optional: true
+
+rejects:
+  - producer: target-skill
+    instrument: self-approval
+
+  - producer: target-skill
+    instrument: risk-acceptance
+
+  - producer: target-skill
+    instrument: runtime-attestation
+
+produces:
+  - producer: skill-release-gate
+    instrument: release-decision
+    evidence:
+      - action
+      - target
+      - readiness-verdict
+      - security-verdict
+      - final-decision
+      - reasons
+      - missing-evidence
+      - next-actions
+    mutates-target: false
+    mutates-trust-registry: false
+
+decisions:
+  - Reject
+  - Hold
+  - Needs revision
+  - Eligible with accepted risks
+  - Eligible
+
+precedence:
+  - condition: invalid-or-missing-report
+    decision: Hold
+  - condition: security-reject
+    decision: Reject
+  - condition: readiness-reject
+    decision: Reject
+  - condition: security-hold
+    decision: Hold
+  - condition: readiness-needs-revision
+    decision: Needs revision
+  - condition: missing-action-evidence
+    decision: Hold
+  - condition: accepted-material-risks
+    decision: Eligible with accepted risks
+  - condition: all-requirements-satisfied
+    decision: Eligible

@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-readiness-auditor/readiness-report.schema.json",
+  "title": "Agent Skill Readiness Report",
+  "description": "Schema for JSON reports produced by skill-readiness-auditor",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "auditor",
+    "auditorVersion",
+    "targetRoot",
+    "targetCount",
+    "semanticReviewComplete",
+    "results"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "auditor": {
+      "type": "string",
+      "const": "skill-readiness-auditor"
+    },
+    "auditorVersion": {
+      "type": "string"
+    },
+    "targetRoot": {
+      "type": "string"
+    },
+    "targetCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "semanticBatchLimit": {
+      "type": "integer"
+    },
+    "semanticReviewComplete": {
+      "type": "boolean"
+    },
+    "securityCertification": {
+      "type": "string"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "skill",
+          "skill_directory",
+          "readiness_verdict",
+          "depth",
+          "model_profile",
+          "profile_source",
+          "security_status",
+          "security_handoff_required",
+          "release_status",
+          "frontmatter_valid",
+          "semantic_review_complete",
+          "findings"
+        ],
+        "properties": {
+          "skill": { "type": "string" },
+          "skill_directory": { "type": "string" },
+          "readiness_verdict": {
+            "type": "string",
+            "enum": [
+              "Ready",
+              "Ready with suggestions",
+              "Approve with nits",
+              "Needs revision",
+              "Reject"
+            ]
+          },
+          "depth": {
+            "type": "string",
+            "enum": ["quick", "standard", "deep"]
+          },
+          "model_profile": { "type": "string" },
+          "profile_source": { "type": "string" },
+          "security_status": { "type": "string" },
+          "security_handoff_required": { "type": "boolean" },
+          "release_status": { "type": "string" },
+          "frontmatter_valid": { "type": "boolean" },
+          "semantic_review_complete": { "type": "boolean" },
+          "discovered_resources": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "resolved_resources": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "unresolved_resources": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "commands_observed": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "severity",
+                "type",
+                "confidence",
+                "title",
+                "location",
+                "evidence",
+                "impact",
+                "fix",
+                "owner"
+              ],
+              "properties": {
+                "severity": {
+                  "type": "string",
+                  "enum": ["Blocker", "Major", "Minor", "Nit"]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": ["Defect", "Concern", "Suggestion"]
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": ["Observed", "Inferred", "Unknown"]
+                },
+                "title": { "type": "string" },
+                "location": { "type": "string" },
+                "evidence": { "type": "string" },
+                "impact": { "type": "string" },
+                "fix": { "type": "string" },
+                "owner": { "type": "string", "const": "Readiness" },
+                "policy": { "type": "string" }
+              }
+            }
+          },
+          "security_handoffs": { "type": "array" },
+          "mechanical_dimensions": { "type": "object" },
+          "semantic_checks_required": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "skipped_checks": { "type": "array" }
+        }
+      }
+    }
+  }
+}

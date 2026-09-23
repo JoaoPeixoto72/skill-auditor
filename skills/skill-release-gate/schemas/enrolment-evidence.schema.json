@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "skill-release-gate/enrolment-evidence.schema.json",
+  "title": "Agent Skill Enrolment Evidence",
+  "description": "Operator authorization and bundle integrity record required for Trust Registry enrolment",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "target",
+    "bundleHash",
+    "bundleIntegrity",
+    "operatorAuthorization",
+    "enrolmentTimestamp"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "target": {
+      "type": "string"
+    },
+    "bundleHash": {
+      "type": "string",
+      "pattern": "^(sha256:)?[a-f0-9]{64}$"
+    },
+    "bundleIntegrity": {
+      "type": "boolean"
+    },
+    "operatorAuthorization": {
+      "type": "string"
+    },
+    "enrolmentTimestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "runtimeEnforcement": {
+      "type": "string",
+      "enum": [
+        "NOT_REQUIRED",
+        "VERIFIED",
+        "FAILED"
+      ]
+    },
+    "trustRegistryVersion": {
+      "type": "string",
+      "default": "2.0.0"
+    }
+  },
+  "additionalProperties": false
+}

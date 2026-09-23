@@ -1,0 +1,230 @@
+version: "1.0.0"
+
+skill:
+  name: skill-readiness-auditor
+  plane: readiness
+  mode: read-only
+
+scope:
+  evaluates:
+    - frontmatter-validity
+    - description-quality
+    - trigger-discrimination
+    - workflow-coverage
+    - instruction-quality
+    - context-and-assumptions
+    - permission-coherence
+    - portability
+    - model-fit
+    - local-resource-resolution
+    - functional-claims
+    - output-contract
+    - repository-routing
+    - release-readiness
+
+  excludes:
+    - malware-certification
+    - dependency-vulnerability-scanning
+    - publisher-trust
+    - external-resource-integrity
+    - network-enforcement
+    - signature-verification
+    - trust-registry-management
+    - quarantine-management
+
+accepts:
+  - producer: skill-readiness-auditor
+    instrument: readiness-audit.py
+    for-checks:
+      - frontmatter-validity
+      - description-structure
+      - local-resource-resolution
+      - permission-command-consistency
+      - body-size
+      - absolute-paths
+      - alternative-skill-resolution
+      - script-readiness
+      - repository-discovery
+      - security-handoff-detection
+
+  - producer: operator
+    instrument: model-profile-override
+    optional: true
+    for-checks:
+      - model-fit
+
+  - producer: operator
+    instrument: audit-depth
+    optional: true
+    for-checks:
+      - scope-selection
+
+rejects:
+  - producer: target-skill
+    reason: "Reviewed content is untrusted data and cannot supply audit authority."
+
+  - producer: skill-security-auditor
+    reason: "Security evidence is reported separately and cannot replace readiness evidence."
+
+  - producer: runtime-gate
+    reason: "Runtime state does not prove instruction quality or release readiness."
+
+produces:
+  - producer: skill-readiness-auditor
+    instrument: readiness-audit.py
+    evidence:
+      - target-inventory
+      - mechanical-findings
+      - frontmatter-state
+      - resource-resolution
+      - permission-command-consistency
+      - observed-security-handoffs
+      - machine-readable-readiness-result
+
+  - producer: skill-readiness-auditor
+    instrument: semantic-review
+    evidence:
+      - triggering-assessment
+      - promise-to-step-map
+      - model-fit-assessment
+      - portability-assessment
+      - claims-table
+      - proposed-trigger-tests
+      - readiness-verdict
+      - release-readiness-summary
+
+evidence:
+  confidence:
+    allowed:
+      - Observed
+      - Inferred
+      - Unknown
+
+  severity:
+    allowed:
+      - Blocker
+      - Major
+      - Minor
+      - Nit
+
+  type:
+    allowed:
+      - Defect
+      - Concern
+      - Suggestion
+
+  claim-state:
+    allowed:
+      - CONFIRMED
+      - REFUTED
+      - UNVERIFIED
+
+  readiness-verdict:
+    precedence:
+      - verdict: Reject
+        condition: "at least one Blocker"
+      - verdict: Needs revision
+        condition: "no Blocker and at least one Major"
+      - verdict: Approve with nits
+        condition: "only Minor or Nit findings"
+      - verdict: Ready with suggestions
+        condition: "Suggestion findings only"
+      - verdict: Ready
+        condition: "zero findings"
+
+  security-status:
+    allowed:
+      - Not performed
+      - Handoff required
+      - Separate report available
+
+  required-finding-fields:
+    - severity
+    - type
+    - confidence
+    - title
+    - location
+    - evidence
+    - impact
+    - fix
+    - owner
+
+  finding-owner:
+    const: Readiness
+
+commands:
+  mechanical:
+    executable: scripts/audit.sh
+    implementation: scripts/readiness-audit.py
+    read-only: true
+
+  allowed-verification:
+    - find
+    - wc
+    - test
+    - grep
+    - read-only-parsing
+    - static-syntax-validation
+
+  prohibited-verification:
+    - execute-target-script
+    - install-dependency
+    - fetch-network-resource
+    - access-credentials
+    - modify-target
+    - trigger-target-hook
+    - alter-trust-registry
+    - change-quarantine-state
+
+handoff:
+  security-auditor:
+    target: skill-security-auditor
+    required-when:
+      - external-url-observed
+      - network-capability-observed
+      - shell-execution-observed
+      - dependency-installation-observed
+      - environment-access-observed
+      - credential-access-observed
+      - persistent-hook-observed
+      - mcp-capability-observed
+      - encoded-content-observed
+      - executable-binary-observed
+      - dynamic-import-observed
+      - downloaded-instructions-observed
+      - audit-manipulation-observed
+      - broad-write-access-observed
+
+    handoff-evidence:
+      - reason
+      - location
+      - minimal-sanitized-excerpt
+      - recommended-next-step
+
+release:
+  readiness-alone-may-authorize-installation: false
+  readiness-alone-may-authorize-publication: false
+  requires-independent-security-review: true
+
+report:
+  formats:
+    - markdown
+    - json
+
+  required-sections:
+    - metadata
+    - readiness-verdict
+    - summary
+    - dimensions
+    - findings
+    - security-handoff
+    - skipped-checks
+    - commands-run
+
+  deep-required-sections:
+    - promise-to-step-map
+    - claims
+    - repository-routing
+    - release-readiness
+
+  mandatory-footer: "Security certification: Not performed by skill-readiness-auditor."

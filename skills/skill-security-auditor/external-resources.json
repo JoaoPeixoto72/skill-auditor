@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "hasExternalResources": true,
+  "requiresRuntimeGate": false,
+  "resources": [
+    {
+      "url": "https://json-schema.org/draft/2020-12/schema",
+      "tier": 0,
+      "purpose": "JSON Schema dialect identifier in schemas/external-resources.schema.json. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://json.schemastore.org/sarif-2.1.0.json",
+      "tier": 0,
+      "purpose": "SARIF 2.1.0 dialect identifier emitted in --format sarif output. Never fetched.",
+      "maxBytes": 1
+    }
+  ]
+}

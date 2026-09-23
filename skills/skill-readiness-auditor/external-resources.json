@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "hasExternalResources": true,
+  "requiresRuntimeGate": false,
+  "resources": [
+    {
+      "url": "https://json-schema.org/draft/2020-12/schema",
+      "tier": 0,
+      "purpose": "JSON Schema dialect identifier in schemas/readiness-report.schema.json. Never fetched.",
+      "maxBytes": 1
+    }
+  ]
+}
