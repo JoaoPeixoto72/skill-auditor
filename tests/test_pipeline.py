@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1] / "skills"
 READINESS = ROOT / "skill-readiness-auditor" / "scripts" / "readiness-audit.py"
 SECURITY = ROOT / "skill-security-auditor" / "scripts" / "security-audit.py"
 GATE = ROOT / "skill-release-gate" / "scripts" / "release-gate.py"
-PAYLOAD = ROOT / "skill-security-auditor" / "tests" / "fixtures" / "concealment-pt.snippet"
+PAYLOAD = Path(__file__).resolve().parent / "security" / "fixtures" / "concealment-pt.snippet"
 
 SKILL = (
     "---\n"

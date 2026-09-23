@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 
 
-SKILL_ROOT = Path(__file__).resolve().parents[1]
+SKILL_ROOT = Path(__file__).resolve().parents[2] / "skills" / "skill-readiness-auditor"
 AUDITOR = SKILL_ROOT / "scripts" / "readiness-audit.py"
 
 # Payloads live in tests/fixtures/, which skill-security-auditor excludes.

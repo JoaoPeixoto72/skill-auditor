@@ -4,7 +4,6 @@ description: "Combine independent readiness and security audit reports into one 
 argument-hint: "--readiness-report <json> --security-report <json> [--action install|publish|sign|enrol|reaudit] [--format markdown|json]"
 version: 1.0.0
 evidence-schema: "1.0.x"
-model: opus
 effort: medium
 allowed-tools:
   - Read
@@ -169,9 +168,9 @@ bash ${CLAUDE_SKILL_DIR}/scripts/gate.sh \
 ```
 
 The wrapper resolves a Python interpreter that actually executes and forces
-UTF-8 output. `${CLAUDE_SKILL_DIR}` is the directory holding this `SKILL.md` (Claude Code
-substitutes it; on another host use that directory). Never a path relative to
-the working directory: an audited repository may ship its own `scripts/audit.sh`.
+UTF-8 output. Claude Code replaces the skill-directory variable with the folder holding
+this `SKILL.md`; on another host, use that folder. Never a path relative to
+the working directory: an audited repository may ship a script of the same name.
 
 SkillSpector evidence is required only when the security report says it was
 installed or required (`scannerRequired`); a report decided on the
@@ -213,4 +212,6 @@ This skill does not:
 - `schemas/signature-verification.schema.json` — signature evidence shape
 - `scripts/gate.sh` — decision entry point
 - `scripts/release-gate.py` — deterministic decision engine
-- `tests/test_release_gate.py` — decision-matrix tests
+
+Tests live outside the bundle, in the repository's `tests/`: a skill ships
+what it runs, not its test suite or its attack fixtures.

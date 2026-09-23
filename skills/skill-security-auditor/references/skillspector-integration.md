@@ -57,7 +57,7 @@ exception — a manifest that does not parse, a file only partly read — is
 
 SkillSpector lists its own gaps: non-English content, text in images,
 compiled or encrypted code, runtime behaviour. The first is the one Line B
-covers (`scripts/detectors.py`): instruction overrides, concealment from the
+covers (`scripts/security/detectors.py`): instruction overrides, concealment from the
 user and deception of the auditor in Portuguese, Spanish and French, invisible
 Unicode including the Tags block, and descriptions that claim every request.
 A skill written in Portuguese that SkillSpector rates `SAFE` can still be

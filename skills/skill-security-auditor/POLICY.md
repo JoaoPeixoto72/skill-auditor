@@ -1,5 +1,54 @@
 # skill-security-auditor · POLICY
 
+## Contents
+
+- §1. Scope
+- §2. Trust boundary
+- §3. Local-only acquisition boundary
+- §4. Complete-bundle inspection
+- §5. Scanner requirements
+- §6. Scanner independence
+- §7. Analysis completeness
+- §8. Prompt injection
+- §9. Invisible and deceptive content
+- §10. Obfuscation and encoded execution
+- §11. Dangerous execution
+- §12. Capability declaration
+- §13. Least privilege
+- §14. Data access
+- §15. Data exfiltration
+- §16. Persistence
+- §17. Self-modification and lateral skill access
+- §18. Supply-chain risk
+- §19. MCP security
+- §20. External-resource manifest
+- §21. URL requirements
+- §22. Tier 0 — human-only documentation
+- §23. Tier 1 — pinned immutable resource
+- §24. Tier 2 — dynamic data feed
+- §25. Tier 3 — agent-controlling external payload
+- §26. Runtime Gate requirement
+- §27. Runtime interception
+- §28. Redirects
+- §29. Response limits
+- §30. Bundle integrity
+- §31. Signing and provenance
+- §32. Trust Registry
+- §33. Trust states
+- §34. Quarantine events
+- §35. Runtime audit events
+- §36. Dependency findings
+- §37. Semantic security review
+- §38. User control
+- §39. Finding model
+- §40. Confidence
+- §41. Verdicts
+- §42. Accepted risks
+- §43. Deduplication
+- §44. Strict mode
+- §45. Report requirements
+- §46. Prohibited auditor behavior
+
 Version: 1.0.0
 
 This policy is authoritative for project-specific Agent Skill security decisions.

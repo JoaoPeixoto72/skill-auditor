@@ -4,7 +4,6 @@ description: "Audit local Agent Skills for malicious behavior, prompt injection,
 argument-hint: "<local-skill-path-or-repo> [--target-mode skill|repo] [--mode static|semantic] [--format markdown|json|sarif] [--strict] [--require-scanner] [--runtime-attestation <json>]"
 version: 1.0.0
 evidence-schema: "1.0.x"
-model: opus
 effort: high
 allowed-tools:
   - Read
@@ -143,25 +142,12 @@ Use two independent evidence lines:
 
 ### Line A — SkillSpector
 
-Use SkillSpector for broad generic detection: prompt injection, data
-exfiltration, privilege escalation, supply-chain risk, excessive agency,
-output handling, system-prompt leakage, memory poisoning, tool misuse,
-rogue-agent behavior, trigger abuse, dangerous code, AST-based behavior, taint
-tracking, YARA signatures, MCP least privilege, MCP tool poisoning, and known
-vulnerable dependencies when available.
-
-Do not infer that every category ran merely because the CLI exited
-successfully. Read completeness metadata from the report when available.
-
-`config/skillspector.lock` names the minimum version whose report shape the
-adapter reads; `scripts/verify-skillspector.py` checks it before any scanner
-evidence is trusted. See `references/skillspector-integration.md`.
-
-SkillSpector names its own gaps: non-English content, images, binaries and
-runtime behaviour. Line B covers the first where it matters most — instruction
-overrides, concealment from the user and deception of the auditor in
-Portuguese, Spanish and French — plus invisible Unicode (including the Tags
-block) and descriptions that claim every request (`scripts/detectors.py`).
+Broad generic detection across SkillSpector's 17 categories (injection,
+exfiltration, supply chain, AST, taint, YARA, MCP, dependencies). Completeness
+comes from the report, never from the exit code. Version check, report
+reading and its declared gaps: `references/skillspector-integration.md`.
+Line B covers the gap that matters most — non-English instructions — in
+`scripts/security/detectors.py`.
 
 ### Line B — project-specific security policy
 
@@ -230,9 +216,9 @@ Run:
 bash ${CLAUDE_SKILL_DIR}/scripts/audit.sh <target> [--strict] [--require-scanner] [--format markdown|json|sarif]
 ```
 
-`${CLAUDE_SKILL_DIR}` is the directory holding this `SKILL.md` (Claude Code
-substitutes it; on another host use that directory). Never a path relative to
-the working directory: an audited repository may ship its own `scripts/audit.sh`.
+Claude Code replaces the skill-directory variable with the folder holding
+this `SKILL.md`; on another host, use that folder. Never a path relative to
+the working directory: an audited repository may ship a script of the same name.
 
 Default mode is static and local.
 
@@ -491,7 +477,7 @@ security boundary.
 - `instruments.yaml` — evidence and scanner contract
 - `external-resources.json` — this auditor's own external-resource declaration
 - `config/skillspector.lock` — pinned scanner version, ruleset, and hash
-- `scripts/detectors.py` — non-English, concealment, audit-deception, Unicode and trigger detectors
+- `scripts/security/detectors.py` — non-English, concealment, audit-deception, Unicode and trigger detectors
 - `schemas/external-resources.schema.json` — resource-manifest schema
 - `schemas/risk-acceptance.schema.json` — operator risk-acceptance shape
 - `schemas/runtime-attestation.schema.json` — runtime-enforcement attestation shape
@@ -504,9 +490,9 @@ security boundary.
 - `references/finding-model.md` — findings and verdicts
 - `references/skillspector-integration.md` — local scanner integration
 - `scripts/audit.sh` — security audit entry point
-- `scripts/security-audit.py` — project-specific deterministic checks
+- `scripts/security-audit.py` — entry point of the project-policy checks, which live in `scripts/security/`, one module per concern
 - `scripts/skillspector-adapter.py` — scanner execution and evidence normalization
 - `scripts/verify-skillspector.py` — scanner supply-chain verification, run by `audit.sh`
-- `tests/test_security_audit.py` — deterministic project-policy tests
-- `tests/test_skillspector_adapter.py` — scanner-adapter tests
-- `tests/fixtures/` — attack payloads, excluded from scanning by design
+
+Tests live outside the bundle, in the repository's `tests/`: a skill ships
+what it runs, not its test suite or its attack fixtures.

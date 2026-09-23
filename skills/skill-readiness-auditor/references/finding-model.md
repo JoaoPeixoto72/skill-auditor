@@ -1,5 +1,22 @@
 # Readiness finding model
 
+## Contents
+
+- 1. Finding structure
+- 2. Type
+- 3. Severity
+- 4. Confidence
+- 5. Claim state
+- 6. Verdict
+- 7. Release status
+- 8. Security handoff
+- 9. Evidence rules
+- 10. Finding ownership
+- 11. Deduplication
+- 12. Severity anti-patterns
+- 13. Report ordering
+- 14. Required footer
+
 Version: 1.0.0
 
 This document defines the finding, confidence, claim-state, and verdict models used by `skill-readiness-auditor`.

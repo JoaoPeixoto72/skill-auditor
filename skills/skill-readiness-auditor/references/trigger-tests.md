@@ -1,5 +1,25 @@
 # Trigger tests
 
+## Contents
+
+- 1. Purpose
+- 2. Test categories
+- 3. Positive tests
+- 4. Negative tests
+- 5. Overlap tests
+- 6. Paraphrase tests
+- 7. Underspecified-request tests
+- 8. Adversarial keyword tests
+- 9. Repository-context tests
+- 10. Required test format
+- 11. Minimum suite
+- 12. Description evaluation criteria
+- 13. Common failures
+- 14. Rewriting procedure
+- 15. Severity guidance
+- 16. Security boundary
+- 17. Standard suite for `skill-readiness-auditor`
+
 Version: 1.0.0
 
 Trigger tests evaluate whether a skill description activates for the intended requests and remains inactive for adjacent or unrelated requests.

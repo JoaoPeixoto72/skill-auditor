@@ -1,6 +1,6 @@
 {
   "name": "skill-auditor",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "Audit suite for Agent Skills: readiness (instruction quality, triggers, fit for current Claude models), security (injection in any language, concealment, exfiltration, supply chain; NVIDIA SkillSpector when installed) and a release gate.",
   "author": {
     "name": "JoaoPeixoto72"

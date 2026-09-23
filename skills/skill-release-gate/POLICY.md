@@ -1,5 +1,20 @@
 # skill-release-gate · POLICY
 
+## Contents
+
+- §1. Independent evidence
+- §2. Target identity
+- §3. Report validity
+- §4. Freshness
+- §5. Security precedence
+- §6. Readiness precedence
+- §7. Incomplete analysis
+- §8. Runtime enforcement
+- §9. Risk acceptance
+- §10. Action requirements
+- §11. No mutation
+- §12. Decision precedence
+
 Version: 1.0.0
 
 ## §1. Independent evidence

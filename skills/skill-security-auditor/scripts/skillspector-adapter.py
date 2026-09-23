@@ -129,6 +129,20 @@ def scan_view(target: Path, scratch: Path) -> tuple[Path, str]:
     return view, "git-distributed-files"
 
 
+def separate_restated_gaps(findings: list[dict[str, Any]], analysis: Any):
+    """(findings, restated AE1 findings, benign gaps).
+
+    AE1 ("referenced artifact not completely inspected") restates the ledger
+    as a finding. When every gap in the ledger is benign, so is AE1.
+    """
+    incomplete = isinstance(analysis, dict) and analysis.get("is_complete") is False
+    gaps = accepted_gaps(analysis) if incomplete else None
+    if gaps is None:
+        return findings, [], None
+    restated = [f for f in findings if f.get("id") == "AE1"]
+    return [f for f in findings if f.get("id") != "AE1"], restated, gaps
+
+
 def infer_completeness(report: Any) -> str:
     if not isinstance(report, dict):
         return "FAILED"
@@ -305,6 +319,7 @@ def main() -> int:
     raw_report = raw_report if isinstance(raw_report, dict) else {}
     risk = raw_report.get("risk_assessment") or {}
     analysis = raw_report.get("analysis_completeness")
+    findings, restated, gaps = separate_restated_gaps(findings, analysis)
 
     normalized = {
         "adapterVersion": "1.0.0",
@@ -322,11 +337,7 @@ def main() -> int:
         "omittedStrictFlags": omitted_flags,
         "riskScore": risk.get("score", raw_report.get("risk_score")),
         "recommendation": risk.get("recommendation", raw_report.get("recommendation")),
-        "acceptedGaps": (
-            accepted_gaps(analysis) or []
-            if isinstance(analysis, dict) and analysis.get("is_complete") is False
-            else []
-        ),
+        "acceptedGaps": (gaps or []) + restated,
         "findings": findings,
         "rawReport": raw_report,
     }

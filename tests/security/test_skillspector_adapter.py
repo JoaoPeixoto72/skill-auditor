@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2] / "skills" / "skill-security-auditor"
 ADAPTER = ROOT / "scripts" / "skillspector-adapter.py"
 
 
@@ -55,6 +55,15 @@ class CompletenessTests(unittest.TestCase):
     def test_a_parse_error_stays_partial(self) -> None:
         parse = {"reason_code": "manifest_parse_error", "fatal": False}
         self.assertEqual(load_adapter().infer_completeness(report_with([self.missing, parse])), "PARTIAL")
+
+    def test_restated_gap_is_not_a_finding(self) -> None:
+        issues = [{"id": "AE1", "severity": "HIGH"}, {"id": "AST8", "severity": "CRITICAL"}]
+        split = load_adapter().separate_restated_gaps
+        kept, restated, _ = split(issues, report_with([self.missing])["analysis_completeness"])
+        self.assertEqual(([f["id"] for f in kept], [f["id"] for f in restated]), (["AST8"], ["AE1"]))
+        parse = {"reason_code": "manifest_parse_error", "fatal": False}
+        kept, _, _ = split(issues, report_with([self.missing, parse])["analysis_completeness"])
+        self.assertEqual([f["id"] for f in kept], ["AE1", "AST8"])
 
     def test_uninspected_content_stays_partial(self) -> None:
         self.assertEqual(load_adapter().infer_completeness(report_with([self.missing], 80.0)), "PARTIAL")

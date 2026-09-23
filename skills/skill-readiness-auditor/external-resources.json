@@ -8,6 +8,30 @@
       "tier": 0,
       "purpose": "JSON Schema dialect identifier in schemas/readiness-report.schema.json. Never fetched.",
       "maxBytes": 1
+    },
+    {
+      "url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices",
+      "tier": 0,
+      "purpose": "Source cited in POLICY.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
     }
   ]
 }

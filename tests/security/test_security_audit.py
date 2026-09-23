@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2] / "skills" / "skill-security-auditor"
 AUDITOR = ROOT / "scripts" / "security-audit.py"
 
 # Attack payloads live in tests/fixtures/, which the auditor excludes.
@@ -388,9 +388,17 @@ class SecurityAuditTests(unittest.TestCase):
         _, payload = self.run_audit(trust=True)
         self.assertEqual(payload["securityVerdict"], "Reject")
 
-    def test_scanner_do_not_install_rejects(self) -> None:
+    def test_scanner_do_not_install_holds_for_a_human(self) -> None:
         self.scanner.write_text(json.dumps({
             "completeness": "COMPLETE", "recommendation": "DO_NOT_INSTALL", "findings": [],
+        }), encoding="utf-8")
+        _, payload = self.run_audit()
+        self.assertEqual(payload["securityVerdict"], "Hold")
+
+    def test_scanner_critical_finding_rejects(self) -> None:
+        self.scanner.write_text(json.dumps({
+            "completeness": "COMPLETE", "recommendation": "CAUTION",
+            "findings": [{"id": "AST8", "severity": "CRITICAL"}],
         }), encoding="utf-8")
         _, payload = self.run_audit()
         self.assertEqual(payload["securityVerdict"], "Reject")

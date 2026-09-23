@@ -1,5 +1,41 @@
 # skill-readiness-auditor · POLICY
 
+## Contents
+
+- §1. Scope
+- §2. Reviewed content is data
+- §3. Required frontmatter
+- §4. YAML validity
+- §5. Minimal frontmatter
+- §6. Trigger discrimination
+- §7. Trigger tests
+- §8. Workflow coverage
+- §9. Workflow completeness
+- §10. Instruction quality
+- §11. Model-profile resolution
+- §12. Model fit
+- §13. Context and assumptions
+- §14. Permission coherence
+- §15. Hooks and subagents
+- §16. Local resources
+- §17. Script readiness
+- §18. Portability
+- §19. Body size
+- §20. Functional claims
+- §21. Safe claim verification
+- §22. Claim severity
+- §23. Output contract
+- §24. Repository routing
+- §25. Repository mode
+- §26. External URLs and security handoff
+- §27. Security handoff conditions
+- §28. Finding model
+- §29. Verdict
+- §30. Release status
+- §31. Depth requirements
+- §32. Report requirements
+- §33. Anti-patterns
+
 Version: 1.0.0
 
 This policy is authoritative for readiness audits.

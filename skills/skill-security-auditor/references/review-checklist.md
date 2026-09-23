@@ -1,5 +1,15 @@
 # Security review checklist
 
+## Contents
+
+- Step 4 — Complete bundle
+- Step 5 — Frontmatter capabilities
+- Step 6 — Dangerous behavior
+- Step 7 — Prompt injection
+- Step 11 — Dependencies
+- Step 12 — Provenance and signing
+- Step 13 — Semantic security review
+
 Inventories for `SKILL.md` workflow steps 4 to 13. `POLICY.md` remains
 authoritative for severities and rule numbers.
 

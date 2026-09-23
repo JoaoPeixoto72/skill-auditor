@@ -4,7 +4,6 @@ description: "Audit Agent Skills for instruction quality, trigger discrimination
 argument-hint: "<skill-path-or-repo> [--target skill|repo] [--depth quick|standard|deep] [--model generic|claude] [--format markdown|json]"
 version: 1.0.0
 evidence-schema: "1.0.x"
-model: opus
 effort: high
 allowed-tools:
   - Read
@@ -169,9 +168,9 @@ Run:
 bash ${CLAUDE_SKILL_DIR}/scripts/audit.sh <target> [--depth quick|standard|deep] [--format markdown|json]
 ```
 
-`${CLAUDE_SKILL_DIR}` is the directory holding this `SKILL.md` (Claude Code
-substitutes it; on another host use that directory). Never a path relative to
-the working directory: an audited repository may ship its own `scripts/audit.sh`.
+Claude Code replaces the skill-directory variable with the folder holding
+this `SKILL.md`; on another host, use that folder. Never a path relative to
+the working directory: an audited repository may ship a script of the same name.
 
 Always use the wrapper. It resolves a Python interpreter that actually executes
 — `command -v python3` succeeds against the Windows App Execution Alias, which
@@ -467,6 +466,7 @@ transition skills to or from quarantine.
 - `references/trigger-tests.md` — trigger-test format
 - `references/example-report.md` — required report structure
 - `scripts/audit.sh` — mechanical entry point
-- `scripts/readiness-audit.py` — deterministic readiness checks
-- `tests/test_readiness_audit.py` — deterministic readiness tests
-- `tests/fixtures/` — payloads, excluded from scanning by design
+- `scripts/readiness-audit.py` — entry point of the deterministic checks, which live in `scripts/readiness/`, one module per concern
+
+Tests live outside the bundle, in the repository's `tests/`: a skill ships
+what it runs, not its test suite or its attack fixtures.

@@ -20,6 +20,12 @@
       "tier": 0,
       "purpose": "Install source of the optional scanner, named in config/skillspector.lock for the operator. Never fetched by the audit.",
       "maxBytes": 1
+    },
+    {
+      "url": "https://github.com/NVIDIA/SkillSpector",
+      "tier": 0,
+      "purpose": "Source cited in references/skillspector-integration.md. Never fetched.",
+      "maxBytes": 1
     }
   ]
 }
