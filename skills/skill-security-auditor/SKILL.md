@@ -127,7 +127,7 @@ only flags the installed version supports, requests `--fail-on-findings` and
 SkillSpector is optional. When it is not installed the report says
 `Evidence lines: project-policy`, the project-policy line decides alone, and
 `Eligible for enrolment` stays reachable. When it is installed its evidence
-must be complete, and its `CRITICAL` findings or `DO_NOT_INSTALL` reject.
+must be complete; its `CRITICAL` findings reject, `DO_NOT_INSTALL` holds.
 `--require-scanner` holds any verdict until SkillSpector has run completely,
 for deployments that mandate two evidence lines.
 
@@ -468,8 +468,10 @@ bypass, verify Trust Registry state, verify local bundle integrity, authorize
 the exact URL, apply Tier 0–3 controls, revoke network access after quarantine,
 and require a formal re-audit before restoring trust.
 
-Without host-level interception, a declared Runtime Gate is not an effective
-security boundary.
+The plugin's link guard (`hooks/link_guard.py`, `PreToolUse`) is that
+interception for `WebFetch` and Bash network commands: it ties each URL to its
+skill, re-hashes Tier 1 content before the fetch, and denies changed content or
+undeclared use; requests inside a script stay with this static audit.
 
 ## Files
 

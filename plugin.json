@@ -1,4 +1,4 @@
 {
   "name": "skill-auditor",
-  "description": "Audit suite for Agent Skills: readiness (instruction quality, triggers, fit for current Claude models), security (injection in any language, concealment, exfiltration, supply chain; NVIDIA SkillSpector when installed) and a release gate."
+  "description": "Audit suite for Agent Skills: readiness, security (any language; NVIDIA SkillSpector when installed), a release gate, and a link guard that ties every external link to its skill and blocks changed Tier 1 content."
 }

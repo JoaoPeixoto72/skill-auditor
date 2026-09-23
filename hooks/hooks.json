@@ -1,0 +1,17 @@
+{
+  "description": "skill-auditor link guard: attributes every external link to the skill that declares or uses it, and verifies Tier 1 content hashes before the fetch.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "WebFetch|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/link-guard.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

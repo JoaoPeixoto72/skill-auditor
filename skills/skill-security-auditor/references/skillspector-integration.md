@@ -42,7 +42,7 @@ fallback when offline.
 |---|---|
 | `issues[]` (`id`, `category`, `severity`, `location`) | `findings`, rule ids and severities preserved |
 | `risk_assessment.score` | `riskScore` |
-| `risk_assessment.recommendation` (`SAFE`, `CAUTION`, `DO_NOT_INSTALL`) | `recommendation` — `DO_NOT_INSTALL` rejects |
+| `risk_assessment.recommendation` (`SAFE`, `CAUTION`, `DO_NOT_INSTALL`) | `recommendation` — `DO_NOT_INSTALL` holds for a person; a `CRITICAL` issue rejects |
 | `analysis_completeness` | `completeness` |
 
 **Completeness.** `is_complete: true` → `COMPLETE`. When it is false because
