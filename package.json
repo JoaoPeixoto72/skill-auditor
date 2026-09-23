@@ -4,8 +4,8 @@
   "description": "Multi-skill audit suite and Runtime Integrity Gate for Agent Skills",
   "type": "module",
   "scripts": {
-    "test": "node --test runtime/tests/*.test.mjs && pytest",
-    "test:node": "node --test runtime/tests/*.test.mjs",
+    "test": "node --test && pytest",
+    "test:node": "node --test",
     "test:py": "pytest"
   },
   "keywords": [

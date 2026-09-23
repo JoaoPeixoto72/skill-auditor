@@ -37,7 +37,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Run Node.js Tests
-        run: node --test runtime/tests/*.test.mjs
+        run: node --test
 
       - name: Run Python Tests (pytest)
         run: pytest
