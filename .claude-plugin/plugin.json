@@ -3,7 +3,9 @@
   "version": "5.3.1",
   "description": "Audit suite for Agent Skills: readiness, security (any language; NVIDIA SkillSpector when installed), a release gate, and a link guard that ties every external link to its skill and blocks changed Tier 1 content.",
   "author": {
-    "name": "JoaoPeixoto72"
+    "name": "Joao Peixoto",
+    "email": "joaopeixoto@hotmail.com",
+    "url": "https://github.com/JoaoPeixoto72"
   },
   "keywords": [
     "agent-skills",

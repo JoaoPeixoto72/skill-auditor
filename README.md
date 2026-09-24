@@ -147,4 +147,4 @@ hook protocol.
 
 ## License
 
-[MIT](LICENSE) © 2026 Joao Costa
+[MIT](LICENSE) © 2026 Joao Peixoto
