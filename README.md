@@ -25,6 +25,9 @@ One concern per owner, and each verdict comes from its own evidence.
   tags; allowed-tools coherent with the workflow.
 - Triggering: what the skill does, when to use it, when not — in English,
   Portuguese or Spanish.
+- The action-verb vocabulary a description's opening is scored against;
+  it grows when a real skill opens with a verb it lacks (`chart`, `cut`,
+  `interrogate`, `move`, `package` were added for a lifecycle plugin).
 - Local resources resolve, including a sibling skill's (`../other/scripts/x`)
   and `${CLAUDE_SKILL_DIR}/…`; references one level deep; long references
   with a contents list; no dated instructions.
