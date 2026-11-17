@@ -191,3 +191,22 @@ class SelfAudit(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortugueseRouting(unittest.TestCase):
+    """Phrasings found in real skills that the routing checks used to miss."""
+
+    def setUp(self) -> None:
+        sys.path.insert(0, str(ROOT / "skills" / "skill-readiness-auditor" / "scripts"))
+        from readiness import description
+        self.d = description
+
+    def test_contracted_moments_are_activation_conditions(self) -> None:
+        for text in ("Fechar trabalho depois da revisão, antes do commit.", "Correr antes dos testes."):
+            with self.subTest(text=text):
+                self.assertTrue(self.d.description_has_when_to_use(text))
+
+    def test_negative_boundaries(self) -> None:
+        for text in ("Não revê código (rever-alteracao).", "Não ativar para tarefas de backend."):
+            with self.subTest(text=text):
+                self.assertTrue(self.d.description_has_negative_boundary(text))

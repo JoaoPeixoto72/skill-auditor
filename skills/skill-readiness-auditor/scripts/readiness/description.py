@@ -40,7 +40,8 @@ def description_has_when_to_use(description: str) -> bool:
         # Portuguese and Spanish: the same moments, in the author's language.
         r"\b(?:usar|use|utilizar)\s+(?:quando|antes|depois|no|na|ao|al|cuando)\b",
         r"\b(?:quando|cuando)\s+\w+",
-        r"\b(?:antes|depois|despu[ée]s)\s+de\s+\w+",
+        # "depois da revisão", "antes do commit": de + article contracts.
+        r"\b(?:antes|depois|despu[ée]s)\s+d(?:e|o|a|os|as|el)\s+\w+",
         r"\bno\s+(?:in[íi]cio|princ[íi]pio|fim|final)\s+de\b",
         r"\bao\s+(?:abrir|fechar|come[çc]ar|terminar|rever)\b",
     ]
@@ -55,8 +56,11 @@ def description_has_negative_boundary(description: str) -> bool:
         r"\bnot\s+for\b",
         r"\binstead\s+use\b",
         r"\buse\s+.+\s+instead\b",
-        r"\bn[ãa]o\s+(?:usar|use|é|e|serve)\s+para\b",
+        r"\bn[ãa]o\s+(?:usar|use|ativar|activar|é|e|serve)\s+para\b",
         r"\bno\s+(?:usar|use|es|sirve)\s+para\b",
+        # "Não revê código (rever-alteracao)": a negative clause that names the
+        # skill to use instead, in parentheses.
+        r"\b(?:n[ãa]o|not|no)\s+[^.()]{1,60}\(\s*[a-z0-9]+(?:-[a-z0-9]+)+\s*\)",
     ]
 
     return any(re.search(pattern, description, re.I) for pattern in patterns)
