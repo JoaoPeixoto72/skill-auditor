@@ -188,13 +188,15 @@ def check_frontmatter(
     if top_level_keys <= 2 and len(text.splitlines()) > 20:
         add_finding(
             findings,
-            "Major",
-            "Defect",
+            "Minor",
+            "Suggestion",
             "Non-trivial skill has minimal frontmatter",
             f"{skill_md}:1-{frontmatter_end_line}",
             f"{top_level_keys} top-level fields; {len(text.splitlines())} total lines",
-            "The skill omits capability and execution metadata expected by the harness.",
-            "Declare allowed-tools and relevant optional execution fields.",
+            "Every field but the description is optional in Claude Code, so the skill loads; "
+            "without allowed-tools, effort or disable-model-invocation it runs on defaults.",
+            "Declare the fields whose default is wrong for this skill: allowed-tools for its "
+            "commands, effort for its depth, disable-model-invocation if it has side effects.",
             "§5 Minimal frontmatter",
         )
 

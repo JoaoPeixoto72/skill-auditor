@@ -289,7 +289,7 @@ allowed-tools:
 disallowed-tools:
 ```
 
-Minimal frontmatter on a non-trivial skill → **Major · Defect**.
+Minimal frontmatter on a non-trivial skill → **Minor · Suggestion**. Claude Code makes every field but the description optional; the finding asks only for the fields whose default is wrong for the skill.
 
 A trivial glue skill under 20 lines with no tools, resources, hooks, scripts, or side effects may omit optional fields.
 
