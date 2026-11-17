@@ -299,9 +299,10 @@ def check_model_fit(
     if profile == "generic":
         return
 
-    # A phrase inside a fenced block is an illustration ("Avoid: ..."), not an
-    # instruction the model receives as one.
+    # A phrase inside a fenced block or an inline code span is an illustration
+    # ("Avoid: `be thorough`"), not an instruction the model receives as one.
     fences = [m.span() for m in re.finditer(r"^```.*?^```", text, re.M | re.S)]
+    fences += [m.span() for m in re.finditer(r"`[^`\n]+`", text)]
 
     for pattern, impact, severity, replacement in PROFILE_PHRASES.get(profile, []):
         for match in pattern.finditer(text):

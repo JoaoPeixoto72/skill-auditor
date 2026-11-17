@@ -31,12 +31,23 @@ One concern per owner, and each verdict comes from its own evidence.
 - Local resources resolve, including a sibling skill's (`../other/scripts/x`)
   and `${CLAUDE_SKILL_DIR}/…`; references one level deep; long references
   with a contents list; no dated instructions.
-- **Model fit** for current Claude models, from Anthropic's published
-  prompting pages (`references/model-profiles.md`): aggressive `CRITICAL`/`MUST`
-  emphasis and "if in doubt, use X" that now over-trigger; "double-check"
-  instructions that cause over-verification on Opus 5; "only report
-  high-severity" filters that Sonnet 5 and Opus 5 follow literally. The
-  profile is picked from `model:` or from the host (`.claude/`).
+- **Model fit** for current Claude models (Opus 5.5, Fable 5.2 and the 5
+  family), from Anthropic's published pages (`references/model-profiles.md`,
+  read 2026-11-17), checked in `SKILL.md`, `POLICY.md` and every reference the
+  model is sent to: all-caps `IMPORTANT`/`NEVER`/`MUST` (one finding per file),
+  "if in doubt, use X", re-checks with no criterion, `think hard` and
+  `be thorough` (effort is the control), `don't be lazy`/`keep going until`,
+  requests to write out the reasoning (declined as `reasoning_extraction` on
+  Opus 5.5 and Fable 5.2), standing orders to delegate, and bare "Never" lines
+  that Fable 5.2 reads as absolute. The profile is picked from `model:` or from
+  the host (`.claude/`).
+- **Model or harness** — the test from Anthropic's talk *Rethinking Claude
+  Code best practices*: if Claude gets this wrong once, can you take it back?
+  A prohibition on something irreversible (secrets, deletion, push, deploy,
+  running untrusted code) that exists only as prose; a push/publish/deploy
+  workflow without `disable-model-invocation: true`; a blocking hook that exits
+  1 (Claude Code treats that as non-blocking — exit 2 blocks); a `prompt` or
+  `agent` hook presented as enforcement.
 - Functional claims checked against the files at `--depth deep`.
 
 ## skill-security-auditor
@@ -82,6 +93,34 @@ transcript), then:
 It never grants a permission, only narrows one. It does not see requests made
 inside a script (`python fetch.py`); the security audit flags those scripts
 before installation.
+
+## Exec guard (runtime)
+
+The auditors read untrusted code; they do not run it. That rule is written in
+their `SKILL.md`, and — because running a malicious script once cannot be
+undone — also enforced: a second `PreToolUse` hook blocks, with exit 2, any
+command that would run code while an auditor is the active skill (an
+interpreter given a file or `-m` module, `./x`, `npm test`, `make`, `pytest`,
+`pip install`, …). The plugin's own wrappers and read-only commands pass.
+Outside an audit it says nothing. A crash inside an audit blocks; outside, it
+lets the call through.
+
+## What a hook can and cannot see
+
+Both guards are `PreToolUse` hooks: they see the tool call, not what a script
+does once running, and hooks run outside the sandbox. For a skill whose
+scripts reach the network, only Claude Code's sandbox in strict mode or a cloud
+session with a network allowlist confines the script and its children — the
+security audit accepts those (`enforcedControls: ["os-sandbox-strict"]` or
+`["cloud-network-allowlist"]` in the runtime attestation) as verified
+enforcement, and a hook alone not.
+
+## Relation to `/doctor prompt-audit`
+
+Claude Code's `/doctor prompt-audit` reviews `CLAUDE.md`, rules and skills for
+instructions written for older models, missing files and contradictions. Use
+both: this plugin adds a deterministic report that runs in CI, the
+model-or-harness checks, the security line, and a release decision.
 
 ## skill-release-gate
 
@@ -145,8 +184,13 @@ pytest
 ```
 
 The suite runs without SkillSpector; `tests/test_pipeline.py` takes a skill
-through all three owners, and `tests/hooks/` drives the link guard through the
-hook protocol.
+through all three owners, `tests/hooks/` drives both guards through the hook
+protocol, and `tests/readiness/test_harness_checks.py` includes a self-audit:
+this repository passes its own model-fit and harness checks.
+
+As a CI step the wrappers exit `0` (eligible), `1` (any other verdict) or `2`
+(could not run). As a Claude Code hook, exit 1 does not block — wrap the
+command as `… || exit 2`.
 
 ## License
 

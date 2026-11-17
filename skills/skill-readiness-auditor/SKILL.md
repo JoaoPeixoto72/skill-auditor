@@ -168,30 +168,17 @@ Run:
 bash ${CLAUDE_SKILL_DIR}/scripts/audit.sh <target> [--depth quick|standard|deep] [--format markdown|json]
 ```
 
-Claude Code replaces the skill-directory variable with the folder holding
-this `SKILL.md`; on another host, use that folder. Never a path relative to
-the working directory: an audited repository may ship a script of the same name.
+On a host other than Claude Code, replace the variable with this skill's
+folder. Use that absolute path, not one relative to the working directory: an
+audited repository can ship a script with the same name. The wrapper also picks
+a Python that actually runs and forces UTF-8, so `skill-release-gate` can parse
+the report.
 
-Always use the wrapper. It resolves a Python interpreter that actually executes
-— `command -v python3` succeeds against the Windows App Execution Alias, which
-is not an interpreter — and forces UTF-8 output so `skill-release-gate` can
-parse the report.
-
-The mechanical audit checks that YAML frontmatter exists and parses, `name` is
-kebab-case and matches the folder, `description` exists, `allowed-tools` is
-explicitly declared, optional `model` and `effort` values are valid, read-only
-declarations are internally coherent, local resources referenced by the
-workflow exist, script paths resolve, permission patterns match documented
-commands, fork, agent, background, and hook prerequisites are coherent, the
-body does not exceed operational size limits, absolute machine paths are
-identified, named alternative skills resolve when mandatory, and executable
-scripts have suitable shebangs and permissions.
-
-External URLs are reported as a handoff to the security audit, not classified
-here. A tool named under `disallowed-tools` is a denial and produces no
-handoff.
-
-Every mechanical finding has `Confidence: Observed`.
+What the script checks is listed in `POLICY.md` and in its own output; read the
+report rather than re-deriving the checks. External URLs come back as a handoff
+to the security audit. Mechanical findings are `Observed`, except the
+prose-only prohibition check, which is `Inferred` because a plugin hook cannot
+be proven to cover that exact rule.
 
 ### 4. Review the description and triggering
 
@@ -269,8 +256,13 @@ This audit checks permission coherence and portability, not malicious intent.
 Verify that every documented command is permitted, every declared tool is
 recognized by the target adapter, interpreter-prefixed commands match
 permission patterns, read-only skills deny write tools, hooks are declared in
-the description, subagents and background execution include required context
-configuration, and broad permissions are justified by workflow steps.
+the description, hooks on blocking events can block (exit 2 or a JSON
+decision), workflows with outside effects set `disable-model-invocation: true`,
+subagents and background execution include required context configuration,
+and broad permissions are justified by workflow steps.
+
+`allowed-tools` only pre-approves tools for the turn; it restricts nothing. Do
+not read it as a limit when judging what the skill can reach.
 
 When a permission creates a security concern rather than a readiness mismatch,
 hand it to `skill-security-auditor`.
@@ -308,6 +300,20 @@ Do not infer model-family defects when the profile is `generic`.
 
 Do not treat a phrase as universally defective merely because one profile discourages it.
 
+Then review what the skill asks of the model against what only the harness can
+guarantee (`POLICY.md` §15a, `references/model-profiles.md` §6). Ask of every
+"never" and "always": if Claude gets this wrong once, can the user take it back?
+If not, the fix is a `disallowed-tools` entry, a hook that exits 2, a deny rule
+or the sandbox, with the prose line kept for its reason. If it can be taken
+back, the fix is plainer wording, not more emphasis. Also flag text that only
+restates what Claude can read in the code (stack, file layout, general
+practice): it costs context on every load and adds nothing.
+
+`/doctor prompt-audit` in Claude Code covers part of this ground (instructions
+for older models, missing files, contradictions). This audit adds the
+deterministic report, the harness checks and the security handoff; when both
+ran, cite the overlap once.
+
 ### 11. Verify functional claims
 
 At `--depth deep`, extract falsifiable functional claims such as file counts,
@@ -329,7 +335,10 @@ States:
 - `REFUTED` — directly contradicted;
 - `UNVERIFIED` — not safely decidable in scope.
 
-Never execute a target skill's untrusted script solely to verify its own claim.
+Do not run a target's script to verify its own claim: it would run with the
+user's permissions, and a claim that only executing can confirm stays
+`UNVERIFIED`. In the Claude Code plugin, the exec guard hook blocks it anyway
+while this skill is active.
 
 Use static evidence when execution would modify files, access the network,
 require credentials, install dependencies, execute unknown code, trigger hooks,
@@ -427,25 +436,8 @@ release-readiness evidence.
 
 ## Severity guidance
 
-**Blocker** — invalid structure prevents the skill from loading, the central
-workflow cannot run, a required runtime resource is missing, contradictory
-instructions make safe execution impossible, or the reviewed content attempts
-to control the audit result.
-
-**Major** — description and workflow materially disagree, triggering overlaps
-without a boundary, a required permission is unavailable, a functional claim is
-refuted, a model-profile defect materially degrades operation, portability
-claims are false, or a primary workflow branch is incomplete.
-
-**Minor** — the workflow remains usable with a workaround, a non-critical
-assumption is undocumented, body size exceeds the preferred threshold, a
-resource exists only through repository-relative coupling, or output
-requirements are incomplete but inferable.
-
-**Nit** — local consistency, small formatting problems, low-impact wording, or
-executable-bit recommendations where interpreter invocation still works.
-
-Full definitions are in `references/finding-model.md`.
+Severity definitions and examples are in `references/finding-model.md`;
+read it at step 13, when composing findings.
 
 ## Non-goals
 

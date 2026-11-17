@@ -1,5 +1,5 @@
 {
-  "description": "skill-auditor link guard: attributes every external link to the skill that declares or uses it, and verifies Tier 1 content hashes before the fetch.",
+  "description": "skill-auditor guards. Link guard: attributes every external link to the skill that declares or uses it, and verifies Tier 1 content hashes before the fetch. Exec guard: while an auditor is the active skill, blocks commands that would run the audited code.",
   "hooks": {
     "PreToolUse": [
       {
@@ -9,6 +9,16 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/link-guard.sh\"",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/exec-guard.sh\"",
+            "timeout": 10
           }
         ]
       }

@@ -268,7 +268,7 @@ class ReadinessAuditTests(unittest.TestCase):
             self.finding_titles(result),
         )
 
-    def test_missing_allowed_tools_is_major(self) -> None:
+    def test_missing_allowed_tools_is_a_concern(self) -> None:
         skill = self.create_skill(
             "missing-tools",
             (
@@ -289,10 +289,12 @@ class ReadinessAuditTests(unittest.TestCase):
         process = self.run_audit(skill)
         result = self.parse_result(process)
 
-        self.assertEqual(process.returncode, 1)
-        self.assertIn(
-            "Missing allowed-tools declaration",
-            self.finding_titles(result),
+        # allowed-tools pre-approves and restricts nothing (Claude Code skills
+        # docs): the command still runs after a prompt, so this does not block.
+        self.assertEqual(process.returncode, 0)
+        self.assertEqual(
+            [f["severity"] for f in result["findings"] if f["title"] == "Missing allowed-tools declaration"],
+            ["Minor"],
         )
 
     def test_invalid_model_identifier_is_major(self) -> None:
@@ -480,10 +482,12 @@ class ReadinessAuditTests(unittest.TestCase):
         process = self.run_audit(skill)
         result = self.parse_result(process)
 
-        self.assertEqual(process.returncode, 1)
-        self.assertIn(
-            "Documented command is not matched by allowed-tools",
-            self.finding_titles(result),
+        # allowed-tools pre-approves and restricts nothing (Claude Code skills
+        # docs): the command still runs after a prompt, so this does not block.
+        self.assertEqual(process.returncode, 0)
+        self.assertEqual(
+            [f["severity"] for f in result["findings"] if f["title"] == "Documented command is not matched by allowed-tools"],
+            ["Minor"],
         )
 
     def test_matching_permission_allows_documented_command(self) -> None:

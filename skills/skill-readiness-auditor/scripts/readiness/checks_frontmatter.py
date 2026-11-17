@@ -111,13 +111,15 @@ def check_frontmatter(
     if allowed_tools is None:
         add_finding(
             findings,
-            "Major",
-            "Defect",
+            "Minor",
+            "Concern",
             "Missing allowed-tools declaration",
             f"{skill_md}:1-{frontmatter_end_line}",
             "allowed-tools is absent",
-            "The workflow has no explicit capability contract.",
-            "Declare allowed-tools, even when the list is empty.",
+            "The field is optional and restricts nothing; without it every command goes through "
+            "the normal permission flow, and readers have no declared capability contract.",
+            "Declare the commands the workflow runs, so they need no prompt. Use "
+            "disallowed-tools, hooks or deny rules for what must not happen.",
             "§3.3 Allowed tools",
         )
     elif not isinstance(allowed_tools, (str, list)):
@@ -333,12 +335,14 @@ def check_permission_commands(
         if not command_is_permitted(command, allowed_tools):
             add_finding(
                 findings,
-                "Major",
-                "Defect",
+                "Minor",
+                "Concern",
                 "Documented command is not matched by allowed-tools",
                 location_for(skill_md, text, command),
                 command,
-                "The target adapter may block the documented workflow command.",
+                "allowed-tools only pre-approves: in Claude Code the command still runs, after a "
+                "permission prompt or auto mode's classifier. A host that reads the list as a "
+                "whitelist may block it.",
                 "Add a narrowly scoped Bash permission matching the complete invocation.",
                 "§14 Permission coherence",
             )

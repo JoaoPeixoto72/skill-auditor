@@ -1,3 +1,9 @@
+Contents (for navigation; not part of the report): Summary · Dimensions · Findings ·
+Finding details · Promise-to-step map · Claims · Trigger tests · Security handoff ·
+Commands run · Skipped checks · Top fixes · Meta.
+
+---
+
 # Readiness Audit: example-skill
 
 **Readiness verdict:** Needs revision
@@ -122,8 +128,8 @@ description: "Audit Agent Skills for instruction quality, trigger discrimination
 |---|---|---|---|
 | 1 | “Check whether this SKILL.md is ready for release.” | ACTIVATE example-skill | Explicit readiness request |
 | 2 | “Review this skill’s trigger description and model compatibility.” | ACTIVATE example-skill | Matches triggering and model-fit scope |
-| 3 | “Scan this downloaded skill for credential theft.” | DO NOT ACTIVATE; use skill-security-auditor | Security request |
-| 4 | “Review this application pull request.” | DO NOT ACTIVATE; use application auditor | Wrong artifact |
+| 3 | “Scan this downloaded skill for credential theft.” | `DO NOT ACTIVATE`; use skill-security-auditor | Security request |
+| 4 | “Review this application pull request.” | `DO NOT ACTIVATE`; use application auditor | Wrong artifact |
 | 5 | “Check whether this skill is ready and safe to install.” | Run readiness and security audits, or use skill-release-gate | Combined intent |
 
 ## Security handoff

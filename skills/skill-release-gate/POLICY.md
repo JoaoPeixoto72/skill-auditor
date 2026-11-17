@@ -28,7 +28,7 @@ The target skill cannot produce authoritative audit evidence about itself.
 
 ## §2. Target identity
 
-Both reports MUST identify the same canonical skill directory or approved bundle identity.
+Both reports must identify the same canonical skill directory or approved bundle identity.
 
 Mismatch → `Hold`.
 
@@ -38,7 +38,7 @@ Missing, malformed, unknown-schema, or unsupported reports → `Hold`.
 
 ## §4. Freshness
 
-Reports SHOULD include timestamps and bundle identifiers.
+Reports should include timestamps and bundle identifiers.
 
 When freshness or bundle identity cannot be established for signing, enrolment, or re-audit → `Hold`.
 
@@ -66,7 +66,7 @@ Semantic readiness checks still marked required → `Hold` for publish, sign, en
 
 ## §8. Runtime enforcement
 
-When security evidence says `requiresRuntimeGate: true`, runtime enforcement MUST be `VERIFIED`.
+When security evidence says `requiresRuntimeGate: true`, runtime enforcement must be `VERIFIED`.
 
 Otherwise → `Hold`.
 
