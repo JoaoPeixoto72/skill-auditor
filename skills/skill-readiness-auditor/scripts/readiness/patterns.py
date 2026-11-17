@@ -235,7 +235,7 @@ EMPHASIS_RE = re.compile(
 # Capitalised only: a line that starts a sentence, not the wrapped tail of one.
 BARE_NEVER_RE = re.compile(r"(?m)^[ \t]*(?:[-*][ \t]+|\d+\.[ \t]+)?(?:Never|Nunca)\b(?P<rest>[^\n]*)$")
 NEVER_REASON_RE = re.compile(
-    r"\b(?:because|since|unless|except|so\s+that|otherwise|porque|exceto|a\s+menos|sen[ãa]o)\b|[:—]|\s-\s",
+    r"\b(?:because|since|unless|except|so\s+that|otherwise|porque|exceto|a\s+menos|sen[ãa]o)\b|[:—(]|\s-\s",
     re.I,
 )
 

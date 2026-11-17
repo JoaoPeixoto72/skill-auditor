@@ -111,6 +111,17 @@ class HarnessChecks(unittest.TestCase):
         self.assertTrue(self.titled(bare, "Absolute 'never' without scope or reason"))
         self.assertFalse(self.titled(reasoned, "Absolute 'never' without scope or reason"))
 
+    def test_reason_on_the_wrapped_line_counts(self) -> None:
+        body = ("- Never pipe SQL containing `$` through a shell without `--file=`\n"
+                "  (shell expansion ate the hash).\n")
+        findings = self.audit("wrapped", skill("wrapped", body))
+        self.assertFalse(self.titled(findings, "Absolute 'never' without scope or reason"))
+
+    def test_table_rows_are_not_prohibitions(self) -> None:
+        body = "| V16.5 | `sec.errors` | Error messages don't leak secrets in production. |\n"
+        findings = self.audit("table", skill("table", "| Id | Rule | Check |\n|---|---|---|\n" + body))
+        self.assertFalse(self.titled(findings, "Irreversible prohibition exists only as prose"))
+
     # --- the harness, not the prompt ----------------------------------------------
 
     def test_irreversible_prohibition_in_prose_only(self) -> None:

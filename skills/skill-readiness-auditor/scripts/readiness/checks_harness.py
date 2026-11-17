@@ -77,6 +77,13 @@ def check_emphasis(path: Path, text: str, profile: str, profile_source: str,
     )
 
 
+def sentence_after(text: str, match: re.Match) -> str:
+    """The rest of the sentence, across wrapped lines: the reason is often on the next one."""
+    tail = text[match.start("rest"):match.start("rest") + 400]
+    end = re.search(r"[.!?](?:\s|$)|\n\s*\n|\n\s*(?:[-*]|\d+\.)\s", tail)
+    return tail[: end.end() if end else len(tail)]
+
+
 def check_bare_never(path: Path, text: str, profile: str, findings: list[Finding]) -> None:
     """Fable 5.2 reads 'never' as absolute: ask for scope and reason."""
     if profile == "generic":
@@ -84,7 +91,7 @@ def check_bare_never(path: Path, text: str, profile: str, findings: list[Finding
     code = prose_spans(text)
     bare = [m for m in BARE_NEVER_RE.finditer(text)
             if m.start() >= body_start(text) and not in_spans(m.start(), code)
-            and not NEVER_REASON_RE.search(m.group("rest"))]
+            and not NEVER_REASON_RE.search(sentence_after(text, m))]
     if not bare:
         return
     first = bare[0].group(0).strip()
@@ -120,7 +127,10 @@ def check_prose_hard_rules(skill_md: Path, text: str, frontmatter: dict[str, Any
     code = prose_spans(text)
     reported: set[str] = set()
     for match in PROHIBITION_RE.finditer(text, body_start(text)):
-        if in_spans(match.start("target"), code):
+        line_start = text.rfind("\n", 0, match.start()) + 1
+        # A table row describes a check ("errors don't leak secrets"); it is
+        # not an instruction to the model.
+        if in_spans(match.start("target"), code) or text[line_start:].lstrip().startswith("|"):
             continue
         target = match.group("target")
         category = next((name for name, (pattern, _) in HARD_RULE_TOKENS.items()
