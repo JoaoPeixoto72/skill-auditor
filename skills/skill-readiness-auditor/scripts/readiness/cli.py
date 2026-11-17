@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 from .audit import audit_target, result_to_dict
-from .files import discover_targets
+from .files import discover_targets, plugin_root
 from .model import VALID_PROFILES, VERSION
 from .report import print_markdown
 
@@ -95,16 +95,22 @@ def main() -> int:
         print(f"Error: {error}", file=sys.stderr)
         return 2
 
-    results = [
-        audit_target(
-            skill_md=target,
-            requested_root=target_root,
-            depth=arguments.depth,
-            requested_profile=arguments.model,
-            semantic_complete=arguments.semantic_complete,
+    # A plugin's hooks/hooks.json is reported once, with its first skill.
+    hooks_reported: set[Path | None] = set()
+    results = []
+    for target in targets:
+        plugin = plugin_root(target.parent)
+        results.append(
+            audit_target(
+                skill_md=target,
+                requested_root=target_root,
+                depth=arguments.depth,
+                requested_profile=arguments.model,
+                semantic_complete=arguments.semantic_complete,
+                check_plugin_hooks=plugin not in hooks_reported,
+            )
         )
-        for target in targets
-    ]
+        hooks_reported.add(plugin)
 
     if output_format == "json":
         payload = {

@@ -17,7 +17,7 @@ from .detectors import (  # noqa: E402
 )
 from .manifest import load_manifest, url_usage
 from .model import CODE_EXTENSIONS, DEPENDENCY_FILES, Finding, add_finding, clean
-from .patterns import INJECTION_RE, MARKDOWN_IMAGE_RE, MUTABLE_DEPENDENCY_RE, NETWORK_RE, OBFUSCATION_RE, PERSISTENCE_RE, REGISTRY_TAMPER_RE, SENSITIVE_RE, URL_RE, placeholder_host
+from .patterns import CONFINING_CONTROLS, INJECTION_RE, MARKDOWN_IMAGE_RE, MUTABLE_DEPENDENCY_RE, NETWORK_RE, OBFUSCATION_RE, PERSISTENCE_RE, REGISTRY_TAMPER_RE, SENSITIVE_RE, URL_RE, placeholder_host
 from .text import canonical_url, documentation_context, fenced_code_spans, iter_files, line_index_at, line_location, observes_network_call, pattern_definition_spans, read_text
 
 
@@ -413,16 +413,16 @@ def scan_skill(
                 attestation = json.loads(
                     runtime_attestation.read_text(encoding="utf-8")
                 )
-                required = {
-                    "networkInterceptionEnabled": True,
-                    "directEgressBlocked": True,
-                    "bundleIntegrityEnabled": True,
-                    "quarantineRevocationEnabled": True,
-                }
-                if all(
-                    attestation.get(key) == value
-                    for key, value in required.items()
-                ):
+                # Direct egress blocked, integrity and revocation, and one
+                # layer that sees what a script inside the skill reaches: the
+                # host's interception, or an OS-level sandbox in strict mode,
+                # or a disposable cloud environment with a network allowlist.
+                # A PreToolUse hook alone sees tool calls, not child processes.
+                required = ("directEgressBlocked", "bundleIntegrityEnabled", "quarantineRevocationEnabled")
+                controls = set(attestation.get("enforcedControls") or [])
+                interception = attestation.get("networkInterceptionEnabled") is True or bool(
+                    controls & CONFINING_CONTROLS)
+                if all(attestation.get(key) is True for key in required) and interception:
                     runtime_status = "VERIFIED"
             except Exception:
                 runtime_status = "UNVERIFIED"

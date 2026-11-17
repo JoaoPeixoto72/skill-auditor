@@ -71,7 +71,7 @@ Examples:
 
 A Defect is not subjective.
 
-The report MUST identify the violated policy section.
+The report must identify the violated policy section.
 
 ### Concern
 
@@ -100,7 +100,7 @@ Examples:
 - improved naming where current behavior remains correct;
 - additional trigger tests beyond the minimum.
 
-A Suggestion MUST NOT be used to hide a real defect.
+A Suggestion must not be used to hide a real defect.
 
 ---
 
@@ -229,7 +229,7 @@ Examples:
 - two installed descriptions probably overlap;
 - a fallback is likely unreachable.
 
-An Inferred finding MUST explain the inference.
+An Inferred finding must explain the inference.
 
 The operator should confirm it before applying a disruptive change.
 
@@ -394,7 +394,7 @@ Location: scripts/client.mjs:18
 Recommended next step: Run skill-security-auditor.
 ```
 
-The readiness auditor MUST NOT assign malware, supply-chain, exfiltration, or publisher-trust conclusions.
+The readiness auditor must not assign malware, supply-chain, exfiltration, or publisher-trust conclusions.
 
 When suspicious content also breaks independent review, a readiness finding may still be created.
 
@@ -410,7 +410,7 @@ The security meaning of that behavior is handled separately.
 
 ## 9. Evidence rules
 
-Evidence MUST be:
+Evidence must be:
 
 - specific;
 - attributable;
@@ -488,7 +488,7 @@ Do not duplicate the security auditor's final classification.
 
 ## 11. Deduplication
 
-Multiple symptoms with one root cause SHOULD be folded into one finding.
+Multiple symptoms with one root cause should be folded into one finding.
 
 Example root cause:
 
@@ -528,13 +528,13 @@ Do not:
 
 Order findings by audit discovery order unless the report format explicitly requests severity ordering.
 
-The summary SHOULD identify:
+The summary should identify:
 
 1. the highest-severity issue;
 2. the principal readiness consequence;
 3. the most important next action.
 
-Top fixes SHOULD be ordered by remediation value:
+Top fixes should be ordered by remediation value:
 
 1. changes that unblock execution;
 2. changes that repair routing or coverage;

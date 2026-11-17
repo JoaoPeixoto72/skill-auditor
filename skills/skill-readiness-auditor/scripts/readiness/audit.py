@@ -7,9 +7,26 @@ from pathlib import Path
 from typing import Any, Iterable, Sequence
 from .checks_content import check_absolute_paths, check_audit_manipulation, check_body_size, check_model_fit, check_reference_files, check_resources, check_scripts, scan_security_handoffs
 from .checks_frontmatter import check_description_routing, check_frontmatter, check_hooks_and_subagents, check_permission_commands, check_platform_rules, check_read_only_permissions
+from .checks_harness import check_bare_never, check_emphasis, check_hook_handlers, check_prose_hard_rules, check_side_effect_invocation, has_pre_tool_hook, plugin_hook_file
 from .description import resolve_profile
-from .files import determine_repository_root, extract_frontmatter, read_text
+from .files import determine_repository_root, extract_frontmatter, plugin_root, read_text
 from .model import Finding, SEVERITY_WEIGHT, SecurityHandoff, TargetResult, add_finding, release_status_for, verdict_for
+
+
+def instruction_files(skill_md: Path, skill_dir: Path, text: str,
+                      resolved: Sequence[str]) -> list[tuple[Path, str]]:
+    """SKILL.md, POLICY.md and the Markdown references the workflow resolves."""
+    files = [(skill_md, text)]
+    seen = {skill_md.resolve()}
+    for relative in ["POLICY.md", *resolved]:
+        path = (skill_dir / relative)
+        if path.suffix != ".md" or not path.is_file() or path.resolve() in seen:
+            continue
+        seen.add(path.resolve())
+        body = read_text(path)
+        if body is not None:
+            files.append((path, body))
+    return files
 
 
 def semantic_checks_for_depth(depth: str) -> list[str]:
@@ -74,6 +91,7 @@ def audit_target(
     depth: str,
     requested_profile: str | None,
     semantic_complete: bool = False,
+    check_plugin_hooks: bool = True,
 ) -> TargetResult:
     skill_dir = skill_md.parent.resolve()
     repository_root = determine_repository_root(
@@ -178,6 +196,15 @@ def audit_target(
                 handoffs,
             )
 
+            plugin = plugin_root(skill_dir)
+            hooks_path, plugin_hooks = plugin_hook_file(plugin)
+            check_prose_hard_rules(skill_md, text, frontmatter, has_pre_tool_hook(plugin_hooks), findings)
+            check_side_effect_invocation(skill_md, text, frontmatter, findings)
+            check_hook_handlers(skill_md, text, frontmatter.get("hooks"),
+                                [skill_dir] + ([plugin] if plugin else []), findings)
+            if check_plugin_hooks and hooks_path is not None and plugin is not None:
+                check_hook_handlers(hooks_path, read_text(hooks_path) or "", plugin_hooks, [plugin], findings)
+
         check_body_size(skill_md, text, findings)
         check_absolute_paths(skill_md, text, findings)
 
@@ -196,13 +223,12 @@ def audit_target(
         check_scripts(skill_dir, findings)
         check_reference_files(skill_dir, resolved_resources, findings)
 
-        check_model_fit(
-            skill_md,
-            text,
-            profile,
-            profile_source,
-            findings,
-        )
+        # The model reads SKILL.md and every Markdown file the workflow sends it
+        # to; emphasis in POLICY.md weighs on it as much as in SKILL.md.
+        for path, body in instruction_files(skill_md, skill_dir, text, resolved_resources):
+            check_model_fit(path, body, profile, profile_source, findings)
+            check_emphasis(path, body, profile, profile_source, findings)
+            check_bare_never(path, body, profile, findings)
 
         check_audit_manipulation(
             skill_md,

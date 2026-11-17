@@ -65,7 +65,7 @@ rejected here.
 
 ## Rules
 
-- Never install SkillSpector from the audit, and never give it a remote target.
+- Do not install SkillSpector from the audit or give it a remote target: the audit has to stay local and leave the machine as it found it.
 - Do not execute target scripts.
 - Preserve scanner rule ids and original severities.
 - Do not infer safety from a low score.

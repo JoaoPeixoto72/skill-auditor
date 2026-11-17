@@ -67,10 +67,27 @@
       "type": "array",
       "items": {
         "type": "string"
-      }
+      },
+      "description": "Controls in force. 'os-sandbox-strict' (Claude Code sandbox, strict mode) and 'cloud-network-allowlist' (cloud session with an allowlisted network) confine scripts and child processes and count as interception."
     },
     "details": {
       "type": "string"
+    },
+    "networkInterceptionEnabled": {
+      "type": "boolean",
+      "description": "The privileged host intercepts every outbound request of the skill, including from its scripts."
+    },
+    "directEgressBlocked": {
+      "type": "boolean",
+      "description": "Outbound connections that bypass the gate are refused."
+    },
+    "bundleIntegrityEnabled": {
+      "type": "boolean",
+      "description": "The host verifies the bundle hash before loading the skill."
+    },
+    "quarantineRevocationEnabled": {
+      "type": "boolean",
+      "description": "Network access is revoked when the skill is quarantined."
     }
   },
   "additionalProperties": false

@@ -167,10 +167,9 @@ bash ${CLAUDE_SKILL_DIR}/scripts/gate.sh \
   --action <action>
 ```
 
-The wrapper resolves a Python interpreter that actually executes and forces
-UTF-8 output. Claude Code replaces the skill-directory variable with the folder holding
-this `SKILL.md`; on another host, use that folder. Never a path relative to
-the working directory: an audited repository may ship a script of the same name.
+On a host other than Claude Code, replace the variable with this skill's
+folder, as an absolute path: an audited repository can ship a script with the
+same name. The wrapper picks a Python that runs and forces UTF-8.
 
 SkillSpector evidence is required only when the security report says it was
 installed or required (`scannerRequired`); a report decided on the
@@ -178,6 +177,8 @@ project-policy line alone is complete evidence for this gate.
 
 Exit codes: `0` for `Eligible`, `1` for any other decision, `2` when the gate
 could not run.
+These are CI codes; as a Claude Code hook, exit 1 does not block, so wrap the
+call as `gate.sh … || exit 2`.
 
 ## Output decisions
 

@@ -115,16 +115,12 @@ BASH_COMMAND_RE = re.compile(
 )
 
 # (pattern, operational effect, severity, replacement). Sources, dated, in
-# references/model-profiles.md: Anthropic's prompting pages for Claude Opus 5,
-# Sonnet 5 and the current-model best practices.
+# references/model-profiles.md: Anthropic's prompting pages for current Claude
+# models (Fable 5.2, Opus 5.5, Opus 5, Sonnet 5) and Claude Code's best
+# practices. All-caps emphasis is counted per file by EMPHASIS_RE instead, so
+# fifty `MUST`s are one finding, not fifty.
 PROFILE_PHRASES = {
     "claude": [
-        (
-            re.compile(r"\bCRITICAL\s*:|\bYOU\s+MUST\b|\bMUST\s+ALWAYS\b"),
-            "aggressive emphasis written for older models makes current models over-trigger",
-            "Minor",
-            "State the condition in plain words: 'Use X when ...'.",
-        ),
         (
             re.compile(
                 r"\b(?:if|when)\s+in\s+doubt,?\s+(?:use|run|call|invoke|load)\b|"
@@ -138,14 +134,68 @@ PROFILE_PHRASES = {
         ),
         (
             re.compile(
-                r"\bdouble[- ]check\b|\bre-?verify\b|\bverify\s+your\s+(?:work|answer)\b|"
-                r"\bcheck\s+your\s+work\b|\buse\s+a\s+subagent\s+to\s+(?:verify|double[- ]check|review)\b|"
-                r"\bverifica(?:r)?\s+(?:tudo\s+)?duas\s+vezes\b|\bvolta\s+a\s+verificar\b",
+                r"\bdouble[- ]check\s+(?:everything|all|your)\b|\bre-?verify\s+everything\b|"
+                r"\bverify\s+your\s+(?:work|answer)\b|\bcheck\s+your\s+work\b|"
+                r"\bverifica(?:r)?\s+(?:tudo\s+)?duas\s+vezes\b|\bvolta\s+a\s+verificar\s+tudo\b",
                 re.I,
             ),
-            "current Claude models already self-verify; an explicit re-check instruction causes over-verification",
+            "a re-check with no criterion makes current models over-verify; what helps is a check that "
+            "comes back pass or fail",
             "Minor",
-            "Remove it, or replace it with a concrete gate: 'Continue only when <command> exits 0'.",
+            "Name the check: 'Continue only when <command> exits 0'. A fresh-context reviewer "
+            "(a subagent, /code-review) is a different thing and stays.",
+        ),
+        (
+            re.compile(
+                r"\bthink\s+(?:hard(?:er)?|carefully|deeply|step[- ]by[- ]step)\b|"
+                r"\bbe\s+(?:very\s+|extremely\s+)?thorough\b|"
+                r"\bpensa\s+(?:bem|com\s+cuidado|passo\s+a\s+passo)\b|\bs[eê]\s+minucioso\b",
+                re.I,
+            ),
+            "effort is the control for reasoning depth; these words are ordinary prompt text, and on "
+            "Opus 5.5 a line asking to think carefully delayed replies with no clear quality gain",
+            "Minor",
+            "Remove it and set `effort:` in the frontmatter (or `ultrathink` for one turn).",
+        ),
+        (
+            re.compile(
+                r"\b(?:do\s+not|don'?t)\s+be\s+lazy\b|\bkeep\s+going\s+until\b|"
+                r"\bloop\s+until\s+(?:done|finished|complete)\b|\b(?:do\s+not|don'?t)\s+stop\s+until\b|"
+                r"\bn[ãa]o\s+sejas?\s+pregui[çc]oso\b|\bn[ãa]o\s+pares\s+at[ée]\b",
+                re.I,
+            ),
+            "current models carry an agreed task through on their own; anti-laziness lines cause "
+            "over-work instead of fixing a stall",
+            "Minor",
+            "Give a pass/fail finish line ('done when <command> exits 0'); enforce it with /goal or a "
+            "Stop hook that exits 2.",
+        ),
+        (
+            re.compile(
+                r"\b(?:write|show|output|print|include)\s+(?:out\s+)?(?:all\s+)?(?:of\s+)?(?:your|the)\s+"
+                r"(?:full\s+|complete\s+|internal\s+|entire\s+)?"
+                r"(?:reasoning|chain[- ]of[- ]thought|thought\s+process|thinking)\b|"
+                r"\bthink\s+out\s+loud\b|\bmostra\s+(?:o\s+)?(?:teu\s+|todo\s+o\s+)?racioc[íi]nio\b",
+                re.I,
+            ),
+            "Opus 5.5 and Fable 5.2 can decline a request that pushes the model to reproduce its "
+            "reasoning in the response (refusal category reasoning_extraction)",
+            "Major",
+            "Ask for a short explanation of the answer or a summary of the actions taken; read the "
+            "reasoning from summarized thinking blocks.",
+        ),
+        (
+            re.compile(
+                r"\balways\s+(?:use|spawn|launch|start|delegate\s+to)\s+(?:a\s+|one\s+or\s+more\s+|"
+                r"several\s+|multiple\s+)?(?:parallel\s+)?sub-?agents?\b|"
+                r"\bdelegate\s+(?:every|each|all)\b|\bdelega\s+sempre\b|\busa\s+sempre\s+(?:um\s+)?sub-?agentes?\b",
+                re.I,
+            ),
+            "Fable 5.2 delegates readily when prompts invite it; a standing instruction to delegate "
+            "raises session cost without improving the answer",
+            "Minor",
+            "Say when a subagent is worth its cost (independent parallel work, a fresh reviewer) and "
+            "how to brief it.",
         ),
         (
             re.compile(
@@ -158,19 +208,86 @@ PROFILE_PHRASES = {
             "Name the bar concretely ('report anything that could cause incorrect behaviour; omit pure style').",
         ),
         (
-            re.compile(r"\b(?:do\s+not|don'?t)\s+(?:think|reason)\b|\bwithout\s+thinking\b", re.I),
-            "an instruction not to think increases internal-tag leakage when thinking is disabled",
+            re.compile(
+                r"\b(?:do\s+not|don'?t)\s+(?:think|reason|deliberate)\b|\bwithout\s+(?:thinking|deliberating)\b",
+                re.I,
+            ),
+            "thinking is always on in Opus 5.5, and on Fable 5.2 such a line did not stop thinking at "
+            "medium effort and above",
             "Minor",
-            "Remove it; control cost with effort, not with an instruction.",
-        ),
-        (
-            re.compile(r"\bafter\s+every\s+\d+\s+tool\s+calls?\b", re.I),
-            "forced progress narration is scaffolding current models no longer need",
-            "Nit",
-            "Describe the update you want instead of a fixed cadence.",
+            "Remove it; lower `effort:` instead.",
         ),
     ],
 }
+
+# All-caps emphasis: IMPORTANT, CRITICAL, NEVER, ALWAYS, MUST, DO NOT. Claude
+# Code's best practices list "Add IMPORTANT or ALL CAPS" under advice to stop
+# following: current models over-apply an emphasised rule. Inline code and
+# fenced blocks are excluded by the check (identifiers such as `CRITICAL`).
+EMPHASIS_RE = re.compile(
+    r"(?<![A-Za-z_`])(?:IMPORTANT|CRITICAL|NEVER|ALWAYS|MUST(?:\s+NOT)?|SHALL(?:\s+NOT)?|"
+    r"DO\s+NOT|DON'T|YOU\s+MUST|NUNCA|SEMPRE|OBRIGAT[ÓO]RIO)(?![A-Za-z_`])"
+)
+
+# An imperative line that opens with "Never" and gives no scope or reason.
+# Fable 5.2 treats "never" as absolute; its prompting page asks for the scope
+# and the reason, or an approval rule ("ask before deleting files").
+# Capitalised only: a line that starts a sentence, not the wrapped tail of one.
+BARE_NEVER_RE = re.compile(r"(?m)^[ \t]*(?:[-*][ \t]+|\d+\.[ \t]+)?(?:Never|Nunca)\b(?P<rest>[^\n]*)$")
+NEVER_REASON_RE = re.compile(
+    r"\b(?:because|since|unless|except|so\s+that|otherwise|porque|exceto|a\s+menos|sen[ãa]o)\b|[:—(]|\s-\s",
+    re.I,
+)
+
+# A prohibition in prose whose subject cannot be taken back if the model gets it
+# wrong once (Lydia Hallie, "Rethinking Claude Code best practices"; Claude
+# Code best practices, "Enforce the rules that can't have exceptions").
+# category -> (target pattern, tokens in disallowed-tools that back it).
+PROHIBITION_RE = re.compile(
+    r"\b(?:never|do\s+not|don'?t|must\s+not|nunca|n[ãa]o)\b[^.\n]{0,90}?"
+    r"(?P<target>\.env\b|secrets?\b|credentials?\b|api[ _-]?keys?\b|ssh\s+keys?|id_rsa|"
+    r"rm\s+-rf|delete\b|apag\w*|elimin\w*|"
+    r"(?:force[- ])?push\b|git\s+push|"
+    r"deploy\w*|publish\w*|send\s+(?:an?\s+)?(?:e-?mails?|messages?)|envi\w+\s+(?:e-?mails?|mensage\w+)|"
+    r"drop\s+table|"
+    r"execute\b|run\s+(?:the\s+)?(?:target|untrusted)|execut\w+|"
+    r"install\s+(?:dependencies|packages)|instal\w+\s+depend\w+|"
+    r"fetch\w*\s+(?:urls?|remote)|download\w*)",
+    re.I,
+)
+HARD_RULE_TOKENS = {
+    "secret": (r"\.env|secret|credential|api[ _-]?key|ssh|id_rsa", ("Read(",)),
+    "delete": (r"rm\s+-rf|delete|apag|elimin", ("Bash(rm",)),
+    "push": (r"push", ("Bash(git push",)),
+    "outbound": (r"deploy|publish|send|envi|drop\s+table", ()),
+    "execute": (r"execut|run\s", ()),
+    "install": (r"install|instal", ("install",)),
+    "network": (r"fetch|download", ("WebFetch", "Bash(curl")),
+}
+
+# Commands with an effect outside the working copy. A skill that runs one should
+# not start on the model's own judgment (Claude Code best practices: "For a
+# workflow with side effects ... add disable-model-invocation: true").
+SIDE_EFFECT_COMMAND_RE = re.compile(
+    r"\b(?:git\s+push|npm\s+publish|pnpm\s+publish|yarn\s+publish|cargo\s+publish|twine\s+upload|"
+    r"gh\s+release\s+create|gh\s+pr\s+merge|kubectl\s+(?:apply|delete)|terraform\s+(?:apply|destroy)|"
+    r"helm\s+(?:install|upgrade)|docker\s+push|vercel\s+(?:deploy|--prod)|netlify\s+deploy|"
+    r"firebase\s+deploy|wrangler\s+(?:deploy|publish)|fly\s+deploy|aws\s+s3\s+(?:rm|sync)|"
+    r"supabase\s+db\s+push|sendmail)\b",
+    re.I,
+)
+NEGATION_RE = re.compile(r"\b(?:not|never|don'?t|no|without|n[ãa]o|nunca|sem)\b", re.I)
+
+# Events where a hook is expected to stop something, and how a script says so.
+BLOCKING_HOOK_EVENTS = {"PreToolUse", "Stop", "SubagentStop", "TaskCompleted", "UserPromptSubmit",
+                        "PermissionRequest", "TeammateIdle"}
+EXIT_ONE_RE = re.compile(r"\bexit\s+1\b|sys\.exit\(\s*1\s*\)|process\.exit\(\s*1\s*\)|\bexit\s+\$?\{?1\}?\s*$",
+                         re.M)
+BLOCKING_SIGNAL_RE = re.compile(
+    r"\bexit\s+2\b|sys\.exit\(\s*2\s*\)|process\.exit\(\s*2\s*\)|permissionDecision|\"decision\"|"
+    r"'decision'|exit\s+\$?\{?BLOCK",
+)
+HOOK_SCRIPT_RE = re.compile(r"([A-Za-z0-9_./${}-]+\.(?:sh|py|js|mjs|ts|ps1|rb))")
 
 
 DISALLOWED_TOOLS_RE = re.compile(

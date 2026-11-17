@@ -28,7 +28,25 @@
       "maxBytes": 1
     },
     {
-      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-sonnet-5",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-2",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://code.claude.com/docs/en/best-practices",
+      "tier": 0,
+      "purpose": "Source cited in references/model-profiles.md. Never fetched.",
+      "maxBytes": 1
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=vlfCjWuv4es",
       "tier": 0,
       "purpose": "Source cited in references/model-profiles.md. Never fetched.",
       "maxBytes": 1

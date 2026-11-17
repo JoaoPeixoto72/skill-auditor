@@ -52,13 +52,13 @@ Trigger tests turn those questions into examples that can later be evaluated by 
 
 ## 2. Test categories
 
-Every proposed suite MUST contain:
+Every proposed suite must contain:
 
 - at least two positive tests;
 - at least two negative tests;
 - at least one overlap test.
 
-A complete suite SHOULD also contain:
+A complete suite should also contain:
 
 - one paraphrase test;
 - one underspecified-request test;
@@ -84,7 +84,7 @@ Reason:
 The user explicitly requests a readiness audit covering triggering and model fit.
 ```
 
-Positive tests SHOULD cover different phrasings.
+Positive tests should cover different phrasings.
 
 Weak suite:
 
@@ -120,7 +120,7 @@ Reason:
 The request is a security assessment, not a readiness assessment.
 ```
 
-Negative tests SHOULD cover:
+Negative tests should cover:
 
 - adjacent skills;
 - unrelated domains;
@@ -297,8 +297,8 @@ Use this table:
 |---|---|---|---|
 | 1 | User request | ACTIVATE | Why |
 | 2 | User request | ACTIVATE | Why |
-| 3 | User request | DO NOT ACTIVATE | Why |
-| 4 | User request | DO NOT ACTIVATE | Why |
+| 3 | User request | `DO NOT ACTIVATE` | Why |
+| 4 | User request | `DO NOT ACTIVATE` | Why |
 | 5 | User request | HAND OFF / ACTIVATE BOTH | Why |
 
 Precede it with:

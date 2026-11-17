@@ -103,7 +103,11 @@ NETWORK_RE = re.compile(
     r"\brequests\.(?:get|post|put|delete|request)\s*\(|"
     r"\bhttpx\.(?:get|post|put|delete|request)\s*\(|"
     r"\baxios\.(?:get|post|put|delete|request)\s*\(|"
-    r"\bhttps?\.request\s*\(",
+    r"\bhttps?\.(?:request|get)\s*\(|"
+    # The standard library needs no dependency, so it is the quiet way out.
+    r"\burlopen\s*\(|\burllib\.request\.Request\s*\(|\bhttp\.client\.HTTPS?Connection\s*\(|"
+    r"\bsocket\.create_connection\s*\(|\baiohttp\.ClientSession\s*\(|"
+    r"\bInvoke-RestMethod\b|\bNet\.WebClient\b",
     re.I,
 )
 
@@ -155,3 +159,9 @@ ALLOWED_TOOLS_RE = re.compile(
     r"^allowed-tools:\s*(.*?)(?=^\S|\Z)",
     re.M | re.S,
 )
+
+
+# Runtime attestation `enforcedControls` that confine a running script and its
+# child processes, not only the tool calls: Claude Code's sandbox in strict
+# mode (no retry outside it) and a cloud session's network allowlist.
+CONFINING_CONTROLS = {"os-sandbox-strict", "cloud-network-allowlist"}
